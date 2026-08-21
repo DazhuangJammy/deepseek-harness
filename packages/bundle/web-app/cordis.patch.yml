@@ -294,6 +294,11 @@
     - id: ui-trajectory
       name: '@deepseek-ai/dsh-client-ui-trajectory'
 
+    # Read-only teaching view over the same Session snapshot. Removing this
+    # row removes only the Learning tab; Chat and Trajectory keep running.
+    - id: ui-learning
+      name: '@deepseek-ai/dsh-client-ui-learning'
+
 # ── the agent plane moves behind agent presets ─────────────────────────────
 #
 # Every row below composes what ONE agent contributes to the host registries:

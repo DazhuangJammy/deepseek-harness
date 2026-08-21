@@ -35,12 +35,15 @@ const testsDir = dirOf(import.meta.url)
 const snapshotsDir = join(testsDir, 'snapshots')
 const liveConfig = join(testsDir, '..', 'cordis.yml')
 const replayConfig = join(testsDir, '..', 'cordis.snapshot.yml')
+const chatLiveConfig = join(testsDir, '..', 'chat.cordis.yml')
+const chatReplayConfig = join(testsDir, '..', 'chat.snapshot.cordis.yml')
 const minimalLiveConfig = join(testsDir, '..', 'minimal.cordis.yml')
 const minimalReplayConfig = join(testsDir, '..', 'minimal.snapshot.cordis.yml')
 const runtimeBin = fileURLToPath(new URL('../../../packages/examples/jsonrpc-demo/src/bin.ts', import.meta.url))
 const repoTsconfig = fileURLToPath(new URL('../../../tsconfig.json', import.meta.url))
 
 const MINIMAL_SYSTEM_PROMPT = 'You are the environment-selected minimal software engineer.'
+const CHAT_SYSTEM_PROMPT = 'You are a helpful conversational assistant.'
 const MINIMAL_BASH_DESCRIPTION = `Run commands in a bash shell
 * When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
 * You don't have access to the internet via this tool.
@@ -59,7 +62,7 @@ function dirOf(url: string): string {
 }
 
 interface SdkScenario {
-  /** Scenario name; the snapshots/<name> fixture directory. */
+  /** Scenario and test name. */
   name: string
   /** The user prompt for the single SDK turn. */
   prompt: string
@@ -89,6 +92,16 @@ const SCENARIOS: SdkScenario[] = [
     prompt: 'Reply with exactly: SDK snapshot OK',
     sessionId: 'sdk-snapshot-text',
     children: 0,
+  },
+  {
+    name: 'chat-turn',
+    prompt: 'Reply with exactly: SDK snapshot OK',
+    sessionId: 'sdk-snapshot-chat',
+    children: 0,
+    configs: { live: chatLiveConfig, replay: chatReplayConfig },
+    expectedTools: {},
+    expectedSystem: CHAT_SYSTEM_PROMPT,
+    runtimeContext: false,
   },
   {
     name: 'bash-tool',
@@ -157,8 +170,7 @@ function assembledTools(log: PersistedLog): LoggedTool[] {
     .map(line => JSON.parse(line) as LoggedRequestHeader)
     .find(candidate => candidate.type === 'request/header')
   const tools = event?.data?.header?.tools
-  if (tools === undefined) throw new Error('session log has no request/header tools')
-  return tools
+  return tools ?? []
 }
 
 function assembledToolRequirements(log: PersistedLog): Record<string, string[]> {

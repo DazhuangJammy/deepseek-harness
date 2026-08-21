@@ -43,4 +43,4 @@ preset 用一行来表达这个选择：`@deepseek-ai/dsh-agent-tool-presentatio
 
 `ctx.tools.schemas(agent)` 仍然是该 agent 的**能力**清单，不受呈现方式影响——坍缩的只是 assembly 里的工具。断言「模型收到什么」的测试必须读 assembly；`web-agent-presets.spec.ts` 对随附的 `code` 预设同时断言了这个区分的两侧。
 
-随附的名单变成四个预设（标准/代码/极简/创造），因此任何列出它们的 golden 都会变动。未组装 code 运行时的部署无法组装任何 code 模式的 preset；随附的 Web overlay 带了一个，base 组装没有。
+随附的名单是五个 preset（标准/代码/极简/创造/聊天），因此任何列出它们的 golden 都会变动。未组装 code 运行时的部署无法组装任何 code 模式的 preset；随附的 Web overlay 带了一个，base 组装没有。

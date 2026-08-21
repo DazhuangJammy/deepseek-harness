@@ -13,7 +13,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { resolveSessionPreset, SETTINGS_NAMESPACE } from '@deepseek-ai/dsh-agent-presets'
 import { applyChildComposition, childSessionMeta } from '@deepseek-ai/dsh-subagent'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { CallId, createUserMessage, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-compaction-basic'
 import type {} from '@deepseek-ai/dsh-skill'
 import type {} from '@deepseek-ai/dsh-tools'
@@ -30,6 +30,7 @@ const CODEX_PACKAGE_DIR = join(REPO_ROOT, 'packages/subagent/subagent-codex')
 const CLAUDE_CODE_PACKAGE_DIR = join(REPO_ROOT, 'packages/subagent/subagent-claude-code')
 /** The installation anchor whose dependency surface the preset module fallback mirrors. */
 const INSTALL_ANCHOR = join(REPO_ROOT, 'apps/cli/package.json')
+const CHAT_PROMPT = 'You are a helpful conversational assistant.'
 const MINIMAL_PROMPT = 'You are a helpful software engineer assistant.'
 const MINIMAL_BASH_DESCRIPTION = `Run commands in a bash shell
 * When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
@@ -43,7 +44,7 @@ const MINIMAL_BASH_DESCRIPTION = `Run commands in a bash shell
 /**
  * Boot the shipped Web composition, minus the rows that would bind a port,
  * touch the network, or write outside the test. Everything that decides an
- * agent's capabilities is the real thing, including both shipped presets.
+ * agent's capabilities is the real thing, including every shipped preset.
  */
 async function bootWeb(
   settingsFile: string,
@@ -150,6 +151,15 @@ async function bootWeb(
 const toolNames = (ctx: Context, agent?: Agent): string[] =>
   ctx.tools.schemas(agent).map(schema => schema.name).sort()
 
+function textStream(text: string): AsyncIterable<StreamChunk> {
+  return (async function* () {
+    yield { type: 'block-start', index: 0, blockType: 'text' }
+    yield { type: 'text-delta', index: 0, text }
+    yield { type: 'block-end', index: 0, block: { type: 'text', text } }
+    yield { type: 'finish', reason: { kind: 'stop' } }
+  })()
+}
+
 function toolParameterNames(ctx: Context, agent: Agent, toolName: string): string[] {
   const schema = ctx.tools.schemas(agent).find(tool => tool.name === toolName)
   if (schema === undefined) throw new Error(`missing tool schema ${toolName}`)
@@ -216,12 +226,72 @@ describe('the shipped Web composition', () => {
     }
   })
 
-  it('supplies both shipped presets, and only those, from the system root', async () => {
+  it('supplies every shipped preset, and only those, from the system root', async () => {
     const listed = await ctx.agentPresets.list()
 
-    expect(listed.map(preset => preset.id).sort()).toEqual(['code', 'cordis', 'minimal', 'standard'])
+    expect(listed.map(preset => preset.id).sort()).toEqual(['chat', 'code', 'cordis', 'minimal', 'standard'])
     expect(listed.every(preset => preset.trust === 'system')).toBe(true)
     expect(ctx.agentPresets.defaultId).toBe('standard')
+  })
+
+  it('composes the exact conversational prompt and no tools from `chat`', async () => {
+    const handle = await ctx.agents.create({
+      sessionId: SessionId('preset-chat'),
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'chat').then(() => undefined),
+    })
+    try {
+      const assembly = await ctx.systemPrompt.assemble({ scope: handle.agent })
+      expect(assembly.sections).toEqual([
+        { name: 'deployment:persona', text: CHAT_PROMPT },
+      ])
+      expect(assembly.tools).toEqual([])
+      expect(ctx.agentPresets.serviceFor(handle.agent, 'compaction')).toBeUndefined()
+      expect(handle.agent.ctx.get('compaction')).toBeUndefined()
+    } finally {
+      await handle.dispose()
+    }
+  })
+
+  it('sends the complete prior transcript on each `chat` request', async () => {
+    const handle = await ctx.agents.create({
+      sessionId: SessionId(`preset-chat-history-${randomUUID()}`),
+      agentOptions: { provider: 'chat-test', model: 'chat-test' },
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'chat').then(() => undefined),
+    })
+    const requests: GenerateOptions[] = []
+    const replies = ['first answer', 'second answer']
+    const disposeStream = handle.agent.ctx.on('llm/stream', (request) => {
+      if (request.system !== CHAT_PROMPT) return textStream('chat history test')
+      requests.push(request)
+      const reply = replies.shift()
+      if (reply === undefined) throw new Error('chat history test exhausted its replies')
+      return textStream(reply)
+    })
+    try {
+      handle.agent.followup(createUserMessage({
+        content: [{ type: 'text', text: 'first question' }],
+        source: { kind: 'user' },
+      }))
+      await handle.agent.whenIdle()
+      handle.agent.followup(createUserMessage({
+        content: [{ type: 'text', text: 'second question' }],
+        source: { kind: 'user' },
+      }))
+      await handle.agent.whenIdle()
+
+      expect(requests).toHaveLength(2)
+      expect(requests[1]?.messages.map(message => ({
+        role: message.role,
+        text: message.content.flatMap(block => block.type === 'text' ? [block.text] : []).join(''),
+      }))).toEqual([
+        { role: 'user', text: 'first question' },
+        { role: 'assistant', text: 'first answer' },
+        { role: 'user', text: 'second question' },
+      ])
+    } finally {
+      disposeStream()
+      await handle.dispose()
+    }
   })
 
   it('composes the full agent from `standard`', async () => {

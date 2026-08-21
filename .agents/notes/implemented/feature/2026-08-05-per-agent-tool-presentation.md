@@ -43,4 +43,4 @@ Two sessions in one process can now present differently, so "which tools does th
 
 `ctx.tools.schemas(agent)` remains the agent's CAPABILITY catalog and is unchanged by presentation — only the assembly's tools collapse. Tests asserting what the model receives must read the assembly; `web-agent-presets.spec.ts` asserts both sides of that distinction for the shipped `code` preset.
 
-The shipped roster is four presets (标准/代码/极简/创造), so any golden listing them moves. A deployment that composes no code runtime can compose no code-mode preset; the shipped Web overlay carries one, the base composition does not.
+The shipped roster is five presets (标准/代码/极简/创造/聊天), so any golden listing them moves. A deployment that composes no code runtime can compose no code-mode preset; the shipped Web overlay carries one, the base composition does not.

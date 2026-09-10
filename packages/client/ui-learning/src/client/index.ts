@@ -1,7 +1,10 @@
 /** Browser entry for the read-only Agent architecture learning view. */
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { LearningView } from './LearningView.tsx'
 import { en, NS, zh } from './locales.ts'
@@ -17,8 +20,8 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 export const inject = ['slots', 'locale']
 
 /**
- * Register the learning tab. The view consumes only the standard conversation
- * snapshot, so unloading this plugin removes one tab without changing runtime.
+ * Register the learning tab. The view consumes the Chat target through the
+ * standard Conversation hook, so unloading it changes no runtime behavior.
  * @param ctx - Client root context.
  */
 export function apply(ctx: Context): void {

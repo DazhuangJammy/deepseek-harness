@@ -1,0 +1,11 @@
+# The `chat` agent preset: one complete conversational persona and no
+# model-facing tools, skills, project instructions, runtime context, or
+# compaction. Conversation history remains Session-owned and reaches every
+# model request.
+
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    prefix: You are a helpful conversational assistant.
+    complete: true
+    includeRuntimeContext: false

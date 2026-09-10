@@ -22,7 +22,7 @@ Status: implemented
 
 ## 考虑过的替代方案
 
-**修改 `minimal`。** 否决，因为 `minimal` 是带两个工具和 benchmark 专用人设的编码 preset。移除它的工具或修改它的提示词，会抹掉一个现有产品选项，而不是新增聊天选项。
+**修改 `minimal`。** 否决，因为 `minimal` 是带单个 shell 工具和 benchmark 专用人设的编码 preset。移除它的工具或修改它的提示词，会抹掉一个现有产品选项，而不是新增聊天选项。
 
 **新增独立 API 后端或顶层聊天 tab。** 否决，因为正常的会话与 LLM 流水线已经提供流式输出、持久化、模型选择、附件和 transcript 回放。并行后端会重复这些职责，并让聊天历史的行为异于其他所有 preset。
 
@@ -32,6 +32,6 @@ Status: implemented
 
 该 preset 会从每次模型请求中去掉工具 schema 和运行时材料，但不会让请求变成无状态。其请求头省略 `tools`，第二次及后续请求按顺序携带此前的 transcript。
 
-随附 Web 组装测试固定了确切人设、空工具组装、不存在压缩服务，以及包含第一问与第一答的双轮请求。无密钥 JSON-RPC 快照固定了组装后的聊天配置，以及不含 `tools` 请求头字段的持久化模型可见 transcript。
+随附 Web 组装测试固定了确切人设、空工具组装、不存在压缩服务，以及包含第一问与第一答的双轮请求。无密钥 Web 快照固定了组装后的聊天配置，以及不含 `tools` 请求头字段的持久化模型可见 transcript。
 
-现有的 [preset 架构](../architecture/2026-08-03-per-session-agent-presets.zh.md)与[按 agent 工具呈现](2026-08-05-per-agent-tool-presentation.zh.md) Agent Note 继续作为组装与呈现机制的权威。本决策只增加一项名单成员，不取代任一机制。
+现有的 [preset 架构](../architecture/2026-08-03-per-session-agent-presets.zh.md)与已归档的[按 agent 工具呈现](../../archived/feature/2026-08-05-per-agent-tool-presentation.md) Agent Note 描述组装与呈现机制。本决策只增加一项名单成员，不取代任一机制。

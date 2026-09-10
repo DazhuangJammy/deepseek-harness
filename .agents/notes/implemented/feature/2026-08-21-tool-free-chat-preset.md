@@ -22,7 +22,7 @@ Image attachments remain available through the host's existing message path when
 
 ## Alternatives considered
 
-**Modify `minimal`.** Rejected because `minimal` is a two-tool coding preset with a benchmark-specific persona. Removing its tools or changing its prompt would erase an existing product choice instead of adding conversation.
+**Modify `minimal`.** Rejected because `minimal` is a single-shell coding preset with a benchmark-specific persona. Removing its tool or changing its prompt would erase an existing product choice instead of adding conversation.
 
 **Add a separate API backend or top-level chat tab.** Rejected because the normal session and LLM pipeline already provides streaming, persistence, model selection, attachments, and transcript replay. A parallel backend would duplicate those responsibilities and make chat history behave differently from every other preset.
 
@@ -32,6 +32,6 @@ Image attachments remain available through the host's existing message path when
 
 The preset removes tool schemas and runtime material from each model request but does not make requests stateless. Its request header omits `tools`, and its second and later requests carry the preceding transcript in order.
 
-The shipped Web composition test pins the exact persona, empty tool assembly, absent compaction service, and a two-turn request containing the first question and answer. The keyless JSON-RPC snapshot pins the assembled chat composition and persisted model-visible transcript without a `tools` header field.
+The shipped Web composition test pins the exact persona, empty tool assembly, absent compaction service, and a two-turn request containing the first question and answer. The keyless Web snapshot pins the assembled chat composition and persisted model-visible transcript without a `tools` header field.
 
-The active [preset architecture](../architecture/2026-08-03-per-session-agent-presets.md) and [per-agent tool-presentation](2026-08-05-per-agent-tool-presentation.md) notes remain authoritative for composition and presentation. This decision adds one roster member and does not supersede either mechanism.
+The active [preset architecture](../architecture/2026-08-03-per-session-agent-presets.md) and archived [per-agent tool-presentation](../../archived/feature/2026-08-05-per-agent-tool-presentation.md) note describe composition and presentation. This decision adds one roster member and does not supersede either mechanism.

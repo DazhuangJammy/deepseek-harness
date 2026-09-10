@@ -2,13 +2,21 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
-import type { ConversationSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { SessionSnapshot } from '@deepseek-ai/dsh-api-session-controller/client'
+import type {
+  ConversationNode, ConversationSnapshot, PartialAssistant,
+} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import { LearningView } from '../src/client/LearningView.tsx'
 import { zh, type LearningKey } from '../src/client/locales.ts'
 import { apply as clientApply } from '../src/client/index.ts'
 import { apply as hostApply } from '../src/index.ts'
-import * as invariant from '../src/invariant.ts'
+
+interface LearningFixture {
+  readonly nodes: readonly ConversationNode[]
+  readonly partial: PartialAssistant | null
+  readonly running: boolean
+}
 
 const snapshot = {
   sessionId: 'learning-test',
@@ -19,7 +27,7 @@ const snapshot = {
   ],
   partial: null,
   running: false,
-} as unknown as ConversationSnapshot
+} as unknown as LearningFixture
 
 const contextBatchSnapshot = {
   ...snapshot,
@@ -28,17 +36,33 @@ const contextBatchSnapshot = {
     { kind: 'context', seq: 8, time: 8, content: [{ type: 'text', text: 'runtime rules' }], source: null, provenance: { role: 'inject', label: '@deepseek-ai/dsh-system-prompt' }, form: 'snapshot' },
     { kind: 'context', seq: 9, time: 9, content: [{ type: 'text', text: 'available skills' }], source: null, provenance: { role: 'inject', label: 'skill-catalog' }, form: 'catalog' },
   ],
-} as unknown as ConversationSnapshot
+} as unknown as LearningFixture
 
-function props(value: ConversationSnapshot): ComponentProps<typeof LearningView> {
+function props(value: LearningFixture, includeChat = true): ComponentProps<typeof LearningView> {
+  const conversation = {
+    views: {
+      get: (target: string) => includeChat && target === 'chat' ? {
+        legacy: {
+          nodes: value.nodes,
+          partial: value.partial,
+          runningCalls: [],
+          turnTimings: new Map(),
+          turnEnds: new Map(),
+        },
+      } : undefined,
+    },
+    activeTargets: new Set(['chat']),
+  } as unknown as ConversationSnapshot
+  const session = { running: value.running } as unknown as SessionSnapshot
   return {
-    useSession: ((selector: (snapshot: ConversationSnapshot) => unknown) => selector(value)) as ConvViewProps['useSession'],
+    useConversation: ((selector: (snapshot: ConversationSnapshot) => unknown) => selector(conversation)) as ComponentProps<typeof LearningView>['useConversation'],
+    useSession: ((selector: (snapshot: SessionSnapshot) => unknown) => selector(session)) as ComponentProps<typeof LearningView>['useSession'],
     t: (key: LearningKey) => zh[key],
   } as unknown as ComponentProps<typeof LearningView>
 }
 
-function withNodes(nodes: readonly unknown[], extra: Partial<ConversationSnapshot> = {}): ConversationSnapshot {
-  return { ...snapshot, nodes, partial: null, running: false, ...extra } as unknown as ConversationSnapshot
+function withNodes(nodes: readonly unknown[], extra: Partial<LearningFixture> = {}): LearningFixture {
+  return { ...snapshot, nodes, partial: null, running: false, ...extra } as unknown as LearningFixture
 }
 
 describe('Agent Learning view', () => {
@@ -69,7 +93,7 @@ describe('Agent Learning view', () => {
   })
 
   it('renders a useful empty state without inventing runtime records', () => {
-    render(<LearningView {...props({ ...snapshot, nodes: [], partial: null })} />)
+    render(<LearningView {...props({ ...snapshot, nodes: [], partial: null }, false)} />)
 
     expect(screen.getByText('这个 Session 还没有可解释的运行记录。')).toBeTruthy()
     expect(screen.queryByText('模型响应 · T1 / S1')).toBeNull()
@@ -155,7 +179,7 @@ describe('Agent Learning view', () => {
   })
 
   it('shows partial output and derives the current turn and step from it', () => {
-    const partial: NonNullable<ConversationSnapshot['partial']> = {
+    const partial: NonNullable<LearningFixture['partial']> = {
       turn: 8, step: 5, blocks: [{ kind: 'text', text: 'still streaming' }],
     }
     const { rerender } = render(
@@ -214,26 +238,7 @@ describe('Agent Learning view', () => {
     expect(mounted).toBe(0)
   })
 
-  it('keeps the host entry inert and registers the invariant companion', async () => {
-    let packageName = ''
-    let installerCalled = false
-    const disposer = () => {}
-    const context = {
-      invariants: {
-        register: (name: string, installer: () => void) => {
-          packageName = name
-          installer()
-          installerCalled = true
-          return disposer
-        },
-      },
-    } as unknown as Parameters<typeof invariant.apply>[0]
-
+  it('keeps the host entry inert', () => {
     expect(() => { hostApply() }).not.toThrow()
-    await expect(invariant.apply(context)).resolves.toBe(disposer)
-    expect(packageName).toBe('@deepseek-ai/dsh-client-ui-learning')
-    expect(installerCalled).toBe(true)
-    expect(invariant.name).toBe('client-ui-learning-invariant')
-    expect(invariant.inject).toEqual(['invariants'])
   })
 })

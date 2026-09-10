@@ -1,8 +1,10 @@
-/** A teaching-oriented projection over the existing ConversationSnapshot. */
+/** A teaching-oriented projection over the existing Chat target snapshot. */
 import { useEffect, useMemo, useState } from 'react'
 import type { JSX } from 'react'
-import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type { ConversationNode, ConversationSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type {
+  ConversationNode, ConvViewProps, PartialAssistant,
+} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { IconLightOutline16, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { LearningKey, TermKey } from './locales.ts'
@@ -42,6 +44,18 @@ interface LearningRecord {
     readonly next: LearningKey
     readonly terms: readonly TermKey[]
   }
+}
+
+interface LearningConversationSnapshot {
+  readonly nodes: readonly ConversationNode[]
+  readonly partial: PartialAssistant | null
+  readonly running: boolean
+}
+
+const EMPTY_LEARNING_SNAPSHOT: LearningConversationSnapshot = {
+  nodes: [],
+  partial: null,
+  running: false,
 }
 
 interface GlossaryEntry {
@@ -135,6 +149,19 @@ function observedComponent(role: LearningKey, name: string, evidence: LearningKe
   return { role, name, evidence }
 }
 
+function eventPosition(
+  t: (key: LearningKey) => string,
+  turn: number,
+  step: number | undefined,
+  label?: string,
+): string {
+  const template = t(label === undefined ? 'graph.position' : 'graph.titledPosition')
+  return template
+    .replace('{label}', label ?? '')
+    .replace('{turn}', String(turn))
+    .replace('{step}', step === undefined ? '—' : String(step))
+}
+
 function recordFromNode(node: ConversationNode, t: (key: LearningKey) => string): LearningRecord {
   switch (node.kind) {
     case 'user': {
@@ -149,7 +176,7 @@ function recordFromNode(node: ConversationNode, t: (key: LearningKey) => string)
       const call = node.blocks.find(block => block.kind === 'tool-call')
       const summary = call?.kind === 'tool-call' ? `${t('record.toolCallPrefix')} ${call.name}` : textPreview(node.blocks) || t('record.fallback.model')
       const provider = node.provenance === undefined ? t('graph.notAvailable') : `${node.provenance.provider} / ${node.provenance.model}`
-      return { id: `assistant-${node.seq}`, kind: 'model', stage: 'execution', tone: 'model', badge: 'kind.model', title: `${t('event.model')} · T${node.turn} / S${node.step}`, summary, observed: { input: t('graph.notAvailable'), output: summary }, seq: node.seq, turn: node.turn, step: node.step, component: observedComponent('component.llm', provider, node.provenance === undefined ? 'graph.evidence.missingComponent' : 'graph.evidence.assistantProvenance'), detail: recordDetail('model') }
+      return { id: `assistant-${node.seq}`, kind: 'model', stage: 'execution', tone: 'model', badge: 'kind.model', title: eventPosition(t, node.turn, node.step, t('event.model')), summary, observed: { input: t('graph.notAvailable'), output: summary }, seq: node.seq, turn: node.turn, step: node.step, component: observedComponent('component.llm', provider, node.provenance === undefined ? 'graph.evidence.missingComponent' : 'graph.evidence.assistantProvenance'), detail: recordDetail('model') }
     }
     case 'tool-result': {
       const input = node.call === null ? node.callId : `${node.call.name}(${node.call.argsRaw})`
@@ -184,11 +211,11 @@ function recordFromNode(node: ConversationNode, t: (key: LearningKey) => string)
   }
 }
 
-function partialRecord(snapshot: ConversationSnapshot, t: (key: LearningKey) => string): LearningRecord | null {
+function partialRecord(snapshot: LearningConversationSnapshot, t: (key: LearningKey) => string): LearningRecord | null {
   if (snapshot.partial === null) return null
   return {
     id: 'partial', kind: 'partial', stage: 'execution', tone: 'model', badge: 'kind.model',
-    title: `${t('event.partial')} · T${snapshot.partial.turn} / S${snapshot.partial.step}`,
+    title: eventPosition(t, snapshot.partial.turn, snapshot.partial.step, t('event.partial')),
     summary: textPreview(snapshot.partial.blocks) || t('record.fallback.partial'),
     observed: { input: t('detail.partial.input'), output: textPreview(snapshot.partial.blocks) || t('record.fallback.partial') },
     turn: snapshot.partial.turn,
@@ -198,7 +225,7 @@ function partialRecord(snapshot: ConversationSnapshot, t: (key: LearningKey) => 
   }
 }
 
-function currentPosition(snapshot: ConversationSnapshot): { turn: number | null; step: number | null } {
+function currentPosition(snapshot: LearningConversationSnapshot): { turn: number | null; step: number | null } {
   const last = snapshot.partial?.turn === undefined ? snapshot.nodes.at(-1) : snapshot.partial
   if (last === undefined) return { turn: null, step: null }
   if ('turn' in last && typeof last.turn === 'number') return { turn: last.turn, step: 'step' in last && typeof last.step === 'number' ? last.step : null }
@@ -206,11 +233,15 @@ function currentPosition(snapshot: ConversationSnapshot): { turn: number | null;
 }
 
 /**
- * Render the learning view from the standard session snapshot. No event
+ * Render the learning view from the standard Conversation and Session hooks. No event
  * listener or second projection is created here.
  */
-export function LearningView({ useSession, t }: ConvViewProps & PropsLocale<'learning'>): JSX.Element {
-  const snapshot = useSession(value => value)
+export function LearningView({ useConversation, useSession, t }: ConvViewProps & PropsLocale<'learning'>): JSX.Element {
+  const legacy = useConversation(value => value.views.get('chat')?.legacy)
+  const running = useSession(value => value.running)
+  const snapshot = legacy === undefined
+    ? EMPTY_LEARNING_SNAPSHOT
+    : { nodes: legacy.nodes, partial: legacy.partial, running }
   const records = useMemo(() => {
     const values = snapshot.nodes.map(node => recordFromNode(node, t))
     const partial = partialRecord(snapshot, t)
@@ -262,7 +293,7 @@ export function LearningView({ useSession, t }: ConvViewProps & PropsLocale<'lea
                   {index > 0 && <div className={`${css.connector} ${sameContextBatch ? css.contextConnector : ''}`} aria-hidden="true"><span>{sameContextBatch ? t('graph.contextBatch') : '↓'}</span></div>}
                   <button className={`${css.eventNode} ${expanded ? css.eventNodeExpanded : ''}`} data-tone={record.tone} type="button" aria-expanded={expanded} onClick={() => { setSelectedId(expanded ? null : record.id) }}>
                     <span className={css.nodeRail}><span className={css.nodeIndex}>{String(index + 1).padStart(2, '0')}</span><span className={css.nodeDot} aria-hidden="true" /></span>
-                    <span className={css.nodeContent}><span className={css.nodeMeta}><span>{t(record.badge)}</span><span>{record.seq === undefined ? t('graph.streaming') : `${t('graph.event')} #${record.seq}`}</span>{record.turn === undefined ? null : <span>T{record.turn} · S{record.step}</span>}</span><strong>{record.title}</strong><span className={css.nodeSummary}>{record.summary}</span><span className={css.nodeComponent}><span>{t('graph.component')}</span><b>{t(record.component.role)}</b><code>{record.component.name}</code></span></span><span className={css.nodeToggle} aria-hidden="true">{expanded ? '−' : '+'}</span>
+                    <span className={css.nodeContent}><span className={css.nodeMeta}><span>{t(record.badge)}</span><span>{record.seq === undefined ? t('graph.streaming') : `${t('graph.event')} #${record.seq}`}</span>{record.turn === undefined ? null : <span>{eventPosition(t, record.turn, record.step)}</span>}</span><strong>{record.title}</strong><span className={css.nodeSummary}>{record.summary}</span><span className={css.nodeComponent}><span>{t('graph.component')}</span><b>{t(record.component.role)}</b><code>{record.component.name}</code></span></span><span className={css.nodeToggle} aria-hidden="true">{expanded ? '−' : '+'}</span>
                   </button>
                   {expanded && <div className={css.nodeDetail}>
                     <div className={css.nodeDetailHeader}><span>{t('graph.expanded')}</span><strong>{t(`graph.stage.${record.stage}`)}</strong></div>

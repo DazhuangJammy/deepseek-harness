@@ -6,13 +6,13 @@ English | [中文](2026-08-20-agent-learning-view.zh.md)
 
 ## Problem
 
-DeepSeek Harness already records the facts needed to understand an Agent run, and [Trajectory](2026-07-27-trajectory-inspection-ledger.md) already presents the detailed ledger. A learner still needs a smaller explanation of how User input, the Agent Loop, model requests, tools, and the next Step relate without adding another runtime observer or changing model behavior.
+DeepSeek Harness already records the facts needed to understand an Agent run, and [Trajectory](../../../../packages/client/ui-trajectory/README.md) already presents the detailed ledger. A learner still needs a smaller explanation of how User input, the Agent Loop, model requests, tools, and the next Step relate without adding another runtime observer or changing model behavior.
 
 ## Decision
 
-The `@deepseek-ai/dsh-client-ui-learning` browser plugin registers one session-scoped `conversation.view` entry named `learning`. It reads the standard `ConversationSnapshot` only and derives a teaching list plus a fixed Agent chain. Selecting a record explains what happened, why it happened, the capability category responsible, its input and output, the next destination, and related terms. The plugin owns no service, event listener, persistence event, prompt section, model request, tool, or cross-plugin mutable state. Its contribution is removed with the slot disposer when the plugin unloads.
+The `@deepseek-ai/dsh-client-ui-learning` browser plugin registers one session-scoped `conversation.view` entry named `learning`. It reads the Chat target through the standard Conversation and Session hooks and derives a teaching list plus a fixed Agent chain. Selecting a record explains what happened, why it happened, the capability category responsible, its input and output, the next destination, and related terms. The plugin owns no service, event listener, persistence event, prompt section, model request, tool, runtime invariant, or cross-plugin mutable state. Its contribution is removed with the slot disposer when the plugin unloads.
 
-The source package lives under `packages/client/ui-learning`, so the client aggregate, tsdown manifest scan, package invariants, and per-file coverage gate all inspect the same implementation. Related terms are clickable and open a dictionary that pairs beginner-facing explanations with exact technical definitions, repository ownership, collaborators, and current evidence; records still map one by one from `ConversationSnapshot`, with only the teaching copy selected by record kind.
+The source package lives under `packages/client/ui-learning`, so the client aggregate, tsdown manifest scan, and per-file coverage gate all inspect the same implementation. Related terms are clickable and open a dictionary that pairs beginner-facing explanations with exact technical definitions, repository ownership, collaborators, and current evidence; records still map one by one from the Chat target snapshot, with only the teaching copy selected by record kind.
 
 ## Alternatives considered
 

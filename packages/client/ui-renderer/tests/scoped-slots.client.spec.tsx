@@ -10,7 +10,7 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render } from '@testing-library/react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type FC, type ReactNode } from 'react'
 import { Context } from '@deepseek-ai/cordis'
 import {
   SlotOwnershipError, StaleAuthorizationError,
@@ -22,6 +22,12 @@ import type {
   StandardSourceBinding, StoreInstanceLike,
 } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { createSlotRenderer } from '../src/client/scoped-slots.tsx'
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface SlotMap {
+    'k.embedded': { kind: 'single'; scope: 'session' }
+  }
+}
 
 type AnyProps = Record<string, unknown>
 type RenderSlotFn = (key: string, owner: object, opts?: RenderOpts) => ReactNode
@@ -310,6 +316,52 @@ describe('root outlet', () => {
 })
 
 describe('child outlets and the renderSlot binding', () => {
+  it('renders a Session slot against a fixed non-selected binding', () => {
+    const h = makeHost()
+    h.declare('k.embedded', SINGLE_SESSION)
+    h.addSession('main', { label: 'main' })
+    h.addSession('child', { label: 'child' })
+    h.current.set('main')
+    h.add('k.embedded', {
+      component: ({ sessionId, useSession }: {
+        sessionId: string
+        useSession: (select: (value: { label: string }) => string) => string
+      }) => <b>{sessionId}:{useSession(value => value.label)}</b>,
+    })
+    h.add('root', {
+      component: ({ FixedSessionSlotView }: {
+        FixedSessionSlotView: FC<{
+          sessionId: string
+          slot: 'k.embedded'
+          owner: object
+        }>
+      }) => <FixedSessionSlotView sessionId="child" slot="k.embedded" owner={{}} />,
+      fixedSessionSlots: ['k.embedded'],
+    })
+
+    const view = render(<>{createSlotRenderer().renderRoot(h.host, {})}</>)
+
+    expect(view.container.textContent).toBe('child:child')
+  })
+
+  it('rejects a non-Session key through the erased fixed-slot runtime face', () => {
+    const h = makeHost()
+    h.add('root', {
+      component: ({ FixedSessionSlotView }: {
+        FixedSessionSlotView: FC<{ sessionId: string; slot: string; owner: object }>
+      }) => <FixedSessionSlotView sessionId="child" slot="root" owner={{}} />,
+      fixedSessionSlots: ['root'] as never,
+    })
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const reported = vi.spyOn(h.host, 'reportEntryError')
+
+    render(<>{createSlotRenderer().renderRoot(h.host, {})}</>)
+    expect(reported).toHaveBeenCalledOnce()
+    expect(String(reported.mock.calls[0]?.[2]))
+      .toContain("fixed Session slot 'root' is not a declared strict-Session slot")
+    spy.mockRestore()
+  })
+
   it('renders declared single slots live: fallback when empty, register, dispose back', () => {
     const h = makeHost()
     h.declare('k.single', SINGLE_ROOT)

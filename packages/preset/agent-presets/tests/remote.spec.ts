@@ -155,6 +155,109 @@ describe('the roster a client reads', () => {
     // the host composition, and nothing can be written either.
     expect(roster).toEqual({ presets: [], authorable: false, modeSelectionEnabled: true })
   })
+
+  it('keeps Chat experts out of the Agent-mode roster', async () => {
+    const userRoot = await mkdtemp(join(tmpdir(), 'dsh-expert-remote-'))
+    roots.push(userRoot)
+    const ctx = await harness({
+      default: 'standard',
+      roots: [{ path: join(FIXTURES, 'system'), trust: 'system' }, { path: userRoot, trust: 'user' }],
+      includeShippedRoot: false,
+      includeUserRoot: false,
+    })
+
+    await ctx.agentPresets.remoteExportCreateExpert('interview', 'Interview coach', '', 'Ask one question.')
+
+    expect((await ctx.agentPresets.remoteExportList()).presets.map(row => row.id)).not.toContain('interview')
+    expect((await ctx.agentPresets.remoteExportListExperts()).experts.map(row => row.id)).toContain('interview')
+  })
+
+  it('sorts experts by update time and reads one immutable version', async () => {
+    const userRoot = await mkdtemp(join(tmpdir(), 'dsh-expert-roster-'))
+    roots.push(userRoot)
+    const ctx = await harness({
+      default: 'standard',
+      roots: [{ path: join(FIXTURES, 'system'), trust: 'system' }, { path: userRoot, trust: 'user' }],
+      includeShippedRoot: false,
+      includeUserRoot: false,
+    })
+    vi.spyOn(Date, 'now').mockReturnValueOnce(10).mockReturnValueOnce(20)
+    await ctx.agentPresets.remoteExportCreateExpert('first', 'First', '', 'First prompt', 'briefcase')
+    await ctx.agentPresets.remoteExportCreateExpert('second', 'Second', '', 'Second prompt')
+
+    expect((await ctx.agentPresets.remoteExportListExperts()).experts.map(row => row.id)).toEqual(['second', 'first'])
+    await expect(ctx.agentPresets.remoteExportReadExpertVersion('first', 1)).resolves.toMatchObject({
+      version: { version: 1 }, previousVersion: null, previousPrompt: '', prompt: 'First prompt',
+    })
+  })
+
+  it('rejects invalid and occupied expert identifiers', async () => {
+    const userRoot = await mkdtemp(join(tmpdir(), 'dsh-expert-id-'))
+    roots.push(userRoot)
+    const ctx = await harness({
+      default: 'standard',
+      roots: [{ path: join(FIXTURES, 'system'), trust: 'system' }, { path: userRoot, trust: 'user' }],
+      includeShippedRoot: false,
+      includeUserRoot: false,
+    })
+
+    await expect(ctx.agentPresets.remoteExportCreateExpert('Bad_ID', 'Bad', '', 'Prompt'))
+      .rejects.toMatchObject({ code: 'expert/invalid' })
+    await expect(ctx.agentPresets.remoteExportCreateExpert('standard', 'Duplicate', '', 'Prompt'))
+      .rejects.toMatchObject({ code: 'expert/invalid' })
+  })
+
+  it('saves metadata and prompt versions without changing unrelated live Sessions', async () => {
+    const userRoot = await mkdtemp(join(tmpdir(), 'dsh-expert-save-'))
+    roots.push(userRoot)
+    const ctx = await harness({
+      default: 'standard',
+      roots: [{ path: join(FIXTURES, 'system'), trust: 'system' }, { path: userRoot, trust: 'user' }],
+      includeShippedRoot: false,
+      includeUserRoot: false,
+    })
+    await ctx.agentPresets.remoteExportCreateExpert('interview', 'Interview', '', 'Prompt', 'briefcase')
+    const metadata = await ctx.agentPresets.remoteExportSaveExpert(
+      SessionId('missing'), 'interview', 1, 'Renamed', 'Welcome', 'Prompt', 'chart',
+    )
+    expect(metadata).toMatchObject({ currentVersion: 1, icon: 'chart' })
+    const standard = await agentOn(ctx, 'standard-session', 'standard')
+    const changed = await ctx.agentPresets.remoteExportSaveExpert(
+      standard.id, 'interview', 1, 'Renamed', 'Welcome', 'Changed prompt',
+    )
+    expect(changed.currentVersion).toBe(2)
+  })
+
+  it('applies the newest expert prompt only when a branch needs it', async () => {
+    const userRoot = await mkdtemp(join(tmpdir(), 'dsh-expert-branch-'))
+    roots.push(userRoot)
+    const ctx = await harness({
+      default: 'standard',
+      roots: [{ path: join(FIXTURES, 'system'), trust: 'system' }, { path: userRoot, trust: 'user' }],
+      includeShippedRoot: false,
+      includeUserRoot: false,
+    })
+    await ctx.agentPresets.remoteExportCreateExpert('interview', 'Interview', '', 'Prompt')
+    await writeFile(join(userRoot, 'interview', COMPOSITION_FILE), '- id: persona\n  name: \'@deepseek-ai/dsh-persona\'\n')
+    for (const service of ['shell', 'shellEnv', 'fs', 'subprocess']) {
+      ctx.provide(service as never, {} as never)
+    }
+    const bare = (await ctx.agents.create({ sessionId: SessionId('bare-branch') })).agent
+    const standard = await agentOn(ctx, 'standard-branch', 'standard')
+    const expertAgent = await agentOn(ctx, 'expert-branch', 'interview')
+
+    await expect(ctx.agentPresets.applyLatestExpertPromptForBranch(bare)).resolves.toBe(false)
+    await expect(ctx.agentPresets.applyLatestExpertPromptForBranch(standard)).resolves.toBe(false)
+    await expect(ctx.agentPresets.applyLatestExpertPromptForBranch(expertAgent)).resolves.toBe(true)
+    await expect(ctx.agentPresets.applyLatestExpertPromptForBranch(expertAgent)).resolves.toBe(false)
+  })
+
+  it('rejects optimization when the optional runtime services are absent', async () => {
+    const ctx = await harness()
+    await expect(ctx.agentPresets.remoteExportOptimizeExpert(
+      SessionId('missing-services'), 'answer' as never, new AbortController().signal,
+    )).rejects.toMatchObject({ code: 'expert/optimization-unavailable' })
+  })
 })
 
 describe('reading one composition', () => {

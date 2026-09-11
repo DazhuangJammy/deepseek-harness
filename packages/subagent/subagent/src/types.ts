@@ -11,7 +11,7 @@
 
 import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
 import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { ContentBlock, MessageId } from '@deepseek-ai/dsh-llm'
+import type { ContentBlock, MessageId, UserMessage } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import type { ObjectJsonSchema, ToolRestriction } from '@deepseek-ai/dsh-tools'
 import type { SubagentDescriptorData } from './descriptor.ts'
@@ -129,6 +129,10 @@ export interface SubagentRunEndInfo {
  */
 export interface SubagentCapabilities {
   readonly agentOptions: boolean
+  /** Whether a one-shot child may select an Agent preset instead of inheriting its parent. */
+  readonly agentPreset?: boolean
+  /** Whether a one-shot child may receive logged context before its ordinary prompt. */
+  readonly promptContext?: boolean
   readonly outputSchema: boolean
   readonly depthLimit: boolean
   readonly toolFilter: boolean
@@ -147,6 +151,12 @@ export interface SubagentStartRequest {
   readonly label?: string
   /** Content delivered as the child's user message. */
   readonly prompt: ContentBlock[]
+  /**
+   * Optional non-waking context claimed before the ordinary prompt. Providers
+   * that support it must log the supplied source and content in the child's
+   * first step so model input and transcript presentation share one record.
+   */
+  readonly promptContext?: UserMessage
   /**
    * The spawning agent. In-process providers derive workspace, lineage, and
    * delegation depth from its durable session state. ACP reads only its cwd,
@@ -169,6 +179,11 @@ export interface SubagentStartRequest {
    * before initializing the separate child runtime.
    */
   readonly agentOptions?: AgentOptions
+  /**
+   * Optional Agent preset for a fresh in-process child. Providers that support
+   * this capability compose the named preset instead of inheriting the parent.
+   */
+  readonly agentPreset?: string
   /**
    * Object-rooted JSON Schema within `assertObjectJsonSchema`'s enforced subset. Start rejects
    * unsupported schemas or providers without the capability. Data must be plain host-realm JSON;

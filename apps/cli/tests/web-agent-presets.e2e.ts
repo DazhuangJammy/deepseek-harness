@@ -239,7 +239,7 @@ describe('the shipped Web composition', () => {
     expect(ctx.agentPresets.defaultId).toBe('standard')
   })
 
-  it('composes the exact conversational prompt and no tools from `chat`', async () => {
+  it('composes the conversational prompt and Standard file tools from `chat`', async () => {
     const handle = await ctx.agents.create({
       sessionId: SessionId('preset-chat'),
       setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'chat').then(() => undefined),
@@ -249,7 +249,9 @@ describe('the shipped Web composition', () => {
       expect(assembly.sections).toEqual([
         { name: 'deployment:persona-prefix', text: CHAT_PROMPT },
       ])
-      expect(assembly.tools).toEqual([])
+      expect(assembly.tools.map(tool => tool.name)).toEqual([
+        'bash', 'edit', 'glob', 'grep', 'read', 'read_image', 'write',
+      ])
       expect(ctx.agentPresets.serviceFor(handle.agent, 'compaction')).toBeUndefined()
       expect(handle.agent.ctx.get('compaction')).toBeUndefined()
     } finally {
@@ -511,9 +513,12 @@ describe('the shipped Web composition', () => {
       setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined),
     })
     try {
-      // The host (global) view carries the deployment-level provider alone:
-      // local discovery moved behind the presets with `skill-filesystem`.
-      expect((await ctx.skills.list({ cwd: proj })).map(skill => skill.name)).toEqual(['dsh-badge'])
+      // The host view carries deployment-level and explicit internal skills;
+      // local discovery stays behind the presets with `skill-filesystem`.
+      const globalSkills = await ctx.skills.list({ cwd: proj })
+      expect(globalSkills.map(skill => skill.name)).toEqual(['dsh-badge', 'expert-prompt-refiner'])
+      expect(globalSkills.find(skill => skill.name === 'expert-prompt-refiner')?.invocation)
+        .toEqual({ modelInvocable: false, userInvocable: true })
 
       // The standard agent's view merges the global layer with its preset's
       // own local discovery over the session cwd.
@@ -774,9 +779,7 @@ describe('a delegated child', () => {
     const child = await parent.agent.ctx.agents.create({
       sessionId: SessionId('preset-child'),
       meta: childSessionMeta(parent.agent, 1, false),
-      setup: (agentCtx) => {
-        applyChildComposition(agentCtx, parent.agent, {})
-      },
+      setup: agentCtx => applyChildComposition(agentCtx, parent.agent, {}),
     })
     try {
       expect(toolNames(ctx, child.agent)).toEqual(toolNames(ctx, parent.agent))
@@ -800,9 +803,7 @@ describe('a delegated child', () => {
     const child = await parent.agent.ctx.agents.create({
       sessionId: SessionId('preset-child-switch'),
       meta: childSessionMeta(parent.agent, 1, false),
-      setup: (agentCtx) => {
-        applyChildComposition(agentCtx, parent.agent, {})
-      },
+      setup: agentCtx => applyChildComposition(agentCtx, parent.agent, {}),
     })
     try {
       // The live scope chain is the authority, not the parent's creation
@@ -926,6 +927,29 @@ describe('authoring a preset on the shipped composition', () => {
       // The same tools the shipped `minimal` composes, from a directory copied
       // through the service into a root outside the installed harness.
       expect(toolNames(authorCtx, handle.agent)).toEqual(['bash'])
+    } finally {
+      await handle.dispose()
+    }
+  })
+
+  it('keeps an expert out of the mode roster and mounts the Chat file tools', async () => {
+    await authorCtx.agentPresets.remoteExportCreateExpert(
+      'interview-expert', 'Interview expert', 'Tell me the role.', 'Ask one question.',
+    )
+
+    expect((await authorCtx.agentPresets.remoteExportList()).presets.map(row => row.id))
+      .not.toContain('interview-expert')
+    expect((await authorCtx.agentPresets.remoteExportListExperts()).experts.map(row => row.id))
+      .toContain('interview-expert')
+
+    const handle = await authorCtx.agents.create({
+      sessionId: SessionId('expert-file-tools'),
+      setup: agentCtx => authorCtx.agentPresets.mount(agentCtx, 'interview-expert').then(() => undefined),
+    })
+    try {
+      expect(toolNames(authorCtx, handle.agent)).toEqual([
+        'bash', 'edit', 'glob', 'grep', 'read', 'read_image', 'write',
+      ])
     } finally {
       await handle.dispose()
     }

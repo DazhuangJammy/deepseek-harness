@@ -1,0 +1,10 @@
+version: 1
+scenario: expert-prompt-refiner
+profile: headless
+composition: expert-prompt-refiner
+recording: authored
+header:
+  class: expert-prompt-refiner
+  pin: true
+  systemPromptSource: text-turn
+  toolSchemasSource: text-turn

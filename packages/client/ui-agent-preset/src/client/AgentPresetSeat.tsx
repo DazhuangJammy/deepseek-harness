@@ -109,6 +109,7 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
   const chosenText = chosen === undefined ? undefined : presetDisplayText(chosen, t)
   const label = chosenText?.name ?? state.current
   const ready = state.options.length > 0 && state.current !== ''
+  const modeOptions = state.options
 
   // The introduce cue: the pick was staged from another screen (the settings
   // creator entry), so the chip announces it — the icon eases in and each
@@ -159,7 +160,7 @@ export function AgentPresetSeat({ load, select, introduced, useAgentPresetSeat, 
       <Menu
         open={open}
         onClose={() => { setOpen(false) }}
-        items={state.options.map((option) => {
+        items={modeOptions.map((option) => {
           const text = presetDisplayText(option, t)
           return {
             id: option.id,

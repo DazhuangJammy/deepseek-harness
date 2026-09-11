@@ -21,6 +21,7 @@
  * @module @deepseek-ai/dsh-agent-presets
  */
 
+import { randomUUID } from 'node:crypto'
 import { stat } from 'node:fs/promises'
 import { Context } from '@deepseek-ai/cordis'
 import { evaluate } from '@deepseek-ai/cordis-plugin-loader'
@@ -30,13 +31,25 @@ import { bindScopeParent, createScope, scopeOf, type Scope, type ScopeKey, type 
 // Type-only: resolves the `agent/created` lifecycle event this service watches.
 import type {} from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { AgentPresetDocument, AgentPresetRoster } from './types.ts'
+import { brandString } from '@deepseek-ai/dsh-brand'
+import type { ContentBlock, UserMessage } from '@deepseek-ai/dsh-llm'
+import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type {} from '@deepseek-ai/dsh-skill'
+import { deadline } from '@deepseek-ai/dsh-timeout'
+import type {
+  AgentPresetDocument, AgentPresetRoster, ExpertDocument, ExpertIcon,
+  ExpertOptimizationOutcome, ExpertOptimizationProposal, ExpertOptimizationRun,
+  ExpertProposalId, ExpertRoster, ExpertVersionComparison,
+} from './types.ts'
 import type {} from '@deepseek-ai/dsh-session-projection'
 // Type-only: resolves the registry notification emitted after scope reparenting.
 import type {} from '@deepseek-ai/dsh-tools'
+import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type SettingsService from '@deepseek-ai/dsh-settings'
 import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
+import { PERSONA_PREFIX_SECTION } from '@deepseek-ai/dsh-system-prompt'
 import { discoverPresets, SHIPPED_PRESET_ROOT, USER_PRESET_DIR } from './discovery.ts'
 import { copyComposition, deleteComposition, presetExists, readComposition } from './authoring.ts'
 import { livePresetMounts, mountPreset, serviceForAgent, standingMountFor } from './mount.ts'
@@ -44,8 +57,22 @@ import {
   fileComposition, mountedCompositionRows,
   type AgentPresetComposition,
 } from './composition-inventory.ts'
-import type { AgentPreset, Config, PresetRoot } from './preset.ts'
+import {
+  DEFAULT_EXPERT_CONFIG, PRESET_ID,
+  type AgentPreset, type Config, type ExpertConfig, type PresetRoot,
+} from './preset.ts'
 import { agentPresetProjectionDefinition } from './session.ts'
+import {
+  createExpert, findExpertVersion, readExpertDocument, readExpertSummary, readExpertVersionComparison,
+  synchronizeExpertComposition, updateExpert, validateExpertInput,
+} from './expert.ts'
+import {
+  buildExpertOptimizationTask, EXPERT_OPTIMIZATION_OUTPUT_SCHEMA, EXPERT_OPTIMIZATION_PERSONA,
+  expertPromptRefinerRegistration, expertProposalFromOutput,
+} from './expert-optimizer.ts'
+import {
+  expertRefinementProjectionDefinition, type ExpertPromptApplicationSource,
+} from './expert-session.ts'
 export type * from './types.ts'
 export type {
   AgentPresetComposition, AgentPresetCompositionRow, CompositionRowEnablement,
@@ -59,6 +86,42 @@ function validatePresetId(value: string, field: 'agentPreset' | 'from'): void {
   if (value.length === 0) {
     throw new RemoteError('gateway/bad-request', `${field} must be a non-empty string`, {})
   }
+}
+
+/** Minimal subagent result consumed without introducing a preset↔subagent package cycle. */
+interface ExpertSubagentRun {
+  readonly id: SessionId
+  readonly result: Promise<{
+    readonly output: ContentBlock[]
+    readonly structured?: unknown
+    readonly diagnostic?: string
+    readonly stopReason: string
+  }>
+  dispose(): Promise<void>
+}
+
+/** One server-held optimization operation and its idempotent cleanup. */
+interface HeldExpertOptimization {
+  readonly sessionId: SessionId
+  readonly run: ExpertSubagentRun
+  readonly deadline: { readonly signal: AbortSignal; [Symbol.dispose](): void }
+  proposal?: ExpertOptimizationProposal
+  disposal?: Promise<void>
+}
+
+/** Runtime subagent face used only by the expert optimization coordinator. */
+interface ExpertSubagentRuntime {
+  start(name: string, request: {
+    readonly parent: Agent
+    readonly label: string
+    readonly prompt: ContentBlock[]
+    readonly promptContext: UserMessage
+    readonly outputSchema: ObjectJsonSchema
+    readonly persona: string
+    readonly signal: AbortSignal
+    readonly agentPreset: string
+    readonly agentOptions: { readonly maxTokens: number }
+  }): Promise<ExpertSubagentRun>
 }
 
 /** Resolved preset-selection settings; the registration base supplies both fields. */
@@ -85,7 +148,7 @@ export {
 } from './mount.ts'
 export { copyComposition, deleteComposition, readComposition, writableRoot } from './authoring.ts'
 export { agentPresetProjectionDefinition } from './session.ts'
-export type { AgentPreset, Config, PresetRoot, PresetTrust } from './preset.ts'
+export type { AgentPreset, Config, ExpertConfig, PresetRoot, PresetTrust } from './preset.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -112,6 +175,15 @@ export class AgentPresets extends TypertRemoteService {
     })).default([]),
     includeShippedRoot: z.boolean().default(true),
     includeUserRoot: z.boolean().default(true),
+    experts: z.object({
+      maxNameCharacters: z.number().step(1).min(1).default(80),
+      maxWelcomeCharacters: z.number().step(1).min(1).default(500),
+      maxPromptBytes: z.number().step(1).min(1).default(100_000),
+      maxEvidenceMessages: z.number().step(1).min(1).default(12),
+      maxOptimizationInputBytes: z.number().step(1).min(1).default(300_000),
+      maxOptimizationOutputTokens: z.number().step(1).min(1).default(16_000),
+      optimizationTimeoutMs: z.number().step(1).min(1).default(120_000),
+    }).default(DEFAULT_EXPERT_CONFIG),
   }) as z<Config>
 
   /**
@@ -163,9 +235,13 @@ export class AgentPresets extends TypertRemoteService {
    */
   private readonly selfCtx: Context
 
+  /** Fully resolved expert policy; direct constructors and Loader calls read the same defaults. */
+  private readonly expertConfig: ExpertConfig
+
   constructor(ctx: Context, public config: Config) {
     super(ctx, 'agentPresets')
     this.selfCtx = ctx
+    this.expertConfig = { ...DEFAULT_EXPERT_CONFIG, ...config.experts }
     const { baseUrl } = ctx
     if (baseUrl === undefined) {
       // Self-contained misconfiguration, so it fails at load: without a base
@@ -202,6 +278,10 @@ export class AgentPresets extends TypertRemoteService {
     })
 
     ctx.sessionProjections.register(agentPresetProjectionDefinition)
+    ctx.sessionProjections.register(expertRefinementProjectionDefinition(this.expertConfig.maxEvidenceMessages))
+    ctx.inject(['skills'], (skillCtx) => {
+      skillCtx.skills.register(expertPromptRefinerRegistration())
+    })
 
     // Advisory, not fatal: a synchronous `agent/created` listener that throws
     // VETOES publication, and this service must not, because composing an agent
@@ -216,6 +296,7 @@ export class AgentPresets extends TypertRemoteService {
     // sessions mount in `setup`, and children join through `composeFrom`
     // before publication.
     ctx.on('agent/created', ({ agent }) => {
+      this.restoreExpertPromptOverride(agent)
       if (this.resolvedRoots.length === 0) return
       if (this.composedPreset(agent.ctx) !== undefined) return
       ctx.logger.warn(
@@ -224,6 +305,16 @@ export class AgentPresets extends TypertRemoteService {
         + '(join through AgentPresets.mount() or composeFrom() in the agent factory setup)',
       )
     })
+
+    ctx.on('agent/disposed', ({ agent }) => {
+      const proposalId = this.expertProposalBySession.get(agent.id)
+      if (proposalId === undefined) return
+      void this.retireExpertOptimization(proposalId)
+    })
+
+    ctx.effect(() => async () => {
+      await Promise.allSettled([...this.expertProposals.keys()].map(id => this.retireExpertOptimization(id)))
+    }, 'agent-presets: expert optimization runs')
 
     // The durable record is the commit point. Its public notification carries
     // only the stable identity needed by clients, never the live Session.
@@ -281,15 +372,16 @@ export class AgentPresets extends TypertRemoteService {
     // snapshot even when discovery yields while settings are hot-reloaded.
     const policy = this.selectionPolicy()
     const presets = await this.list()
+    const expertRows = await Promise.all(presets.map(preset => readExpertSummary(preset)))
     return {
-      presets: presets.map(preset => ({
+      presets: presets.flatMap((preset, index) => expertRows[index] === undefined ? [{
         id: preset.id,
         trust: preset.trust,
         isDefault: preset.id === policy.defaultId,
         ...preset.name === undefined ? {} : { name: preset.name },
         ...preset.description === undefined ? {} : { description: preset.description },
         ...preset.broken === undefined ? {} : { broken: preset.broken },
-      })),
+      }] : []),
       authorable: this.authorable,
       modeSelectionEnabled: policy.enabled,
     }
@@ -388,7 +480,8 @@ export class AgentPresets extends TypertRemoteService {
    * @throws when the preset is unknown or discovery reports it broken.
    */
   private async resolveMountable(id?: string): Promise<AgentPreset> {
-    const preset = await this.resolve(id)
+    let preset = await this.resolve(id)
+    if (await synchronizeExpertComposition(preset)) preset = await this.resolve(preset.id)
     if (preset.broken !== undefined) {
       throw new RemoteError(
         'agent-preset/invalid',
@@ -419,6 +512,120 @@ export class AgentPresets extends TypertRemoteService {
    * standing compositions. WeakMap: entries die with their agents.
    */
   private readonly bindings = new WeakMap<ScopeKey, ScopeParentBinding>()
+
+  /** One reviewable candidate per Session; a newer request replaces the older candidate. */
+  private readonly expertProposals = new Map<ExpertProposalId, HeldExpertOptimization>()
+
+  /** Reverse index used to retire one Session's previous candidate in constant time. */
+  private readonly expertProposalBySession = new Map<SessionId, ExpertProposalId>()
+
+  /** Cancel the operation deadline and await child cleanup at most once. */
+  private disposeExpertOptimization(held: HeldExpertOptimization): Promise<void> {
+    held.deadline[Symbol.dispose]()
+    held.disposal ??= held.run.dispose().catch((error: unknown) => {
+      this.selfCtx.logger.warn(`expert optimization child disposal failed: ${String(error)}`)
+    })
+    return held.disposal
+  }
+
+  /** Remove one held optimization and stop any child work still running. */
+  private async retireExpertOptimization(proposalId: ExpertProposalId): Promise<void> {
+    const held = this.expertProposals.get(proposalId)
+    if (held === undefined) return
+    this.expertProposals.delete(proposalId)
+    if (this.expertProposalBySession.get(held.sessionId) === proposalId) {
+      this.expertProposalBySession.delete(held.sessionId)
+    }
+    await this.disposeExpertOptimization(held)
+  }
+
+  /** Settle one standard-mode child into a candidate and notify browser clients. */
+  private async settleExpertOptimization(
+    held: HeldExpertOptimization,
+    proposalId: ExpertProposalId,
+    expert: ExpertDocument,
+    targetMessageId: MessageId,
+  ): Promise<void> {
+    let outcome: ExpertOptimizationOutcome
+    try {
+      const result = await held.run.result
+      if (result.stopReason !== 'completed') {
+        throw new Error(result.diagnostic ?? `提示词优化 Agent 已停止：${result.stopReason}`)
+      }
+      if (result.structured === undefined) {
+        throw new Error('提示词优化 Agent 未返回结构化结果')
+      }
+      const proposal = expertProposalFromOutput(
+        result.structured,
+        proposalId,
+        expert,
+        targetMessageId,
+        this.expertConfig.maxPromptBytes,
+      )
+      held.proposal = proposal
+      outcome = { status: 'ready', proposal }
+    } catch (error) {
+      outcome = { status: 'failed', error: String(error) }
+    } finally {
+      await this.disposeExpertOptimization(held)
+    }
+    if (this.expertProposals.get(proposalId) !== held) return
+    this.selfCtx.emit('expert/optimization-settled', held.sessionId, proposalId, outcome)
+  }
+
+  /** Live agent-local prompt override installed after a version is applied. */
+  private readonly expertPromptOverrides = new WeakMap<Agent, () => void | Promise<void>>()
+
+  /** Replace this live Agent's expert prompt without changing its plugin composition. */
+  private installExpertPromptOverride(agent: Agent, prompt: string): void {
+    void this.expertPromptOverrides.get(agent)?.()
+    const dispose = agent.ctx.effect(() => agent.ctx.systemPrompt.section({
+      name: PERSONA_PREFIX_SECTION,
+      order: agent.ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'),
+      text: prompt,
+      complete: true,
+    }), 'agent-presets: applied expert prompt')
+    this.expertPromptOverrides.set(agent, dispose)
+  }
+
+  /** Record and install one expert prompt version for subsequent requests. */
+  private applyExpertPrompt(
+    agent: Agent,
+    expert: Pick<ExpertDocument, 'id' | 'currentVersion' | 'prompt'>,
+    source: ExpertPromptApplicationSource,
+  ): void {
+    agent.session.append('expert/prompt-applied', {
+      expertId: expert.id,
+      version: expert.currentVersion,
+      prompt: expert.prompt,
+      source,
+    })
+    this.installExpertPromptOverride(agent, expert.prompt)
+  }
+
+  /** Rebuild the last applied prompt override from durable Session events. */
+  private restoreExpertPromptOverride(agent: Agent): void {
+    const prompt = this.selfCtx.sessionProjections.stateOf(agent.session, 'expertRefinement')?.appliedPrompt
+    if (prompt !== null && prompt !== undefined) this.installExpertPromptOverride(agent, prompt)
+  }
+
+  /**
+   * Make a newly seeded ordinary branch use the expert's current version.
+   * @param agent - unpublished branch Agent after its recorded preset is mounted.
+   * @returns whether a newer prompt than the branch history was applied.
+   */
+  async applyLatestExpertPromptForBranch(agent: Agent): Promise<boolean> {
+    const presetId = this.composedPreset(agent.ctx)
+    if (presetId === undefined) return false
+    const preset = await this.resolve(presetId)
+    if (await readExpertSummary(preset) === undefined) return false
+    const expert = await readExpertDocument(preset)
+    const refinement = this.selfCtx.sessionProjections.stateOf(agent.session, 'expertRefinement')
+    const promptInForce = refinement?.appliedPrompt ?? refinement?.activePrompt
+    if (promptInForce === expert.prompt) return false
+    this.applyExpertPrompt(agent, expert, 'branch-latest')
+    return true
+  }
 
   /**
    * Compose one agent from a preset: ensure the preset's standing mount, then
@@ -512,6 +719,303 @@ export class AgentPresets extends TypertRemoteService {
   /** Whether this deployment has a root locally authored presets go to. */
   get authorable(): boolean {
     return this.resolvedRoots.some(root => root.trust === 'user')
+  }
+
+  /** Resolve one ordinary preset and require its expert marker. */
+  private async resolveExpert(id: string): Promise<{ preset: AgentPreset; document: ExpertDocument }> {
+    const preset = await this.resolve(id)
+    return { preset, document: await readExpertDocument(preset) }
+  }
+
+  /**
+   * List locally authored experts independently from the Agent-mode roster.
+   * @returns current expert rows and whether a writable root is available.
+   */
+  @Remote('listExperts')
+  async remoteExportListExperts(): Promise<ExpertRoster> {
+    const entries = await Promise.all((await this.list()).map(preset => readExpertSummary(preset)))
+    return {
+      experts: entries
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined)
+        .sort((left, right) => right.updatedAt - left.updatedAt),
+      authorable: this.authorable,
+    }
+  }
+
+  /**
+   * Read one expert prompt, metadata, and version history.
+   * @param id - expert preset id.
+   * @returns the complete current expert document.
+   */
+  @Remote('readExpert')
+  async remoteExportReadExpert(id: string): Promise<ExpertDocument> {
+    validatePresetId(id, 'agentPreset')
+    return (await this.resolveExpert(id)).document
+  }
+
+  /**
+   * Read one immutable prompt version beside its immediate predecessor.
+   * @param id - expert preset id.
+   * @param version - selected stored version.
+   * @returns both prompt texts and the selected version record.
+   */
+  @Remote('readExpertVersion')
+  async remoteExportReadExpertVersion(id: string, version: number): Promise<ExpertVersionComparison> {
+    validatePresetId(id, 'agentPreset')
+    return await readExpertVersionComparison((await this.resolveExpert(id)).preset, version)
+  }
+
+  /**
+   * Create a self-contained Chat-mode expert in the user preset root.
+   * @param id - new preset directory id.
+   * @param name - display name.
+   * @param welcome - browser-only first-message cue.
+   * @param prompt - complete expert system prompt.
+   * @param icon - optional picker icon.
+   * @returns the created version-one document.
+   */
+  @Remote('createExpert')
+  async remoteExportCreateExpert(
+    id: string,
+    name: string,
+    welcome: string,
+    prompt: string,
+    icon?: ExpertIcon,
+  ): Promise<ExpertDocument> {
+    validatePresetId(id, 'agentPreset')
+    if (!PRESET_ID.test(id)) {
+      throw new RemoteError('expert/invalid', `expert "${id}" has an invalid identifier`, {
+        expertId: id,
+        reason: 'use lowercase letters, digits, and hyphens, starting with a letter or digit',
+      })
+    }
+    const input = { name, welcome, prompt, ...icon === undefined ? {} : { icon } }
+    validateExpertInput(id, input, this.expertConfig)
+    if ((await this.list()).some(preset => preset.id === id)) {
+      throw new RemoteError('expert/invalid', `expert "${id}" already exists`, {
+        expertId: id,
+        reason: 'the identifier is already in use',
+      })
+    }
+    await createExpert(this.resolvedRoots, id, input)
+    this.standing.delete(id)
+    return (await this.resolveExpert(id)).document
+  }
+
+  /**
+   * Save editor fields, appending a version when the prompt text changed.
+   * @param sessionId - currently displayed Session, updated only when it runs this expert.
+   * @param id - expert preset id.
+   * @param expectedVersion - version the editor loaded.
+   * @param name - display name.
+   * @param welcome - browser-only first-message cue.
+   * @param prompt - complete expert system prompt.
+   * @param icon - optional picker icon.
+   * @returns the committed expert document.
+   */
+  @Remote('saveExpert')
+  async remoteExportSaveExpert(
+    sessionId: SessionId,
+    id: string,
+    expectedVersion: number,
+    name: string,
+    welcome: string,
+    prompt: string,
+    icon?: ExpertIcon,
+  ): Promise<ExpertDocument> {
+    validatePresetId(id, 'agentPreset')
+    const input = { name, welcome, prompt, ...icon === undefined ? {} : { icon } }
+    validateExpertInput(id, input, this.expertConfig)
+    const { preset } = await this.resolveExpert(id)
+    const saved = await updateExpert(preset, expectedVersion, input, 'Manual edit', [])
+    this.standing.delete(id)
+    const agent = this.selfCtx.get('agents')?.get(sessionId)
+    if (saved.currentVersion !== expectedVersion
+      && agent !== undefined
+      && this.composedPreset(agent.ctx) === id) {
+      this.applyExpertPrompt(agent, saved, 'manual-save')
+    }
+    return saved
+  }
+
+  /**
+   * Generate one server-held local prompt revision from a selected assistant message.
+   * @param sessionId - live expert Session.
+   * @param targetMessageId - finalized answer ending the evidence window.
+   * @param signal - caller cancellation, combined with the parent Agent maintenance signal.
+   * @returns the child Session identity and server-held proposal identity; no expert file is changed.
+   */
+  @Remote('optimizeExpert')
+  async remoteExportOptimizeExpert(
+    sessionId: SessionId,
+    targetMessageId: MessageId,
+    signal: AbortSignal,
+  ): Promise<ExpertOptimizationRun> {
+    const agents = this.selfCtx.get('agents')
+    const subagents = this.selfCtx.get('subagents') as unknown as ExpertSubagentRuntime | undefined
+    if (agents === undefined || subagents === undefined || this.selfCtx.get('skills') === undefined) {
+      throw new RemoteError('expert/optimization-unavailable', 'expert optimization services are not mounted', {
+        sessionId,
+        reason: 'the deployment must provide Agent, subagent, and skill services',
+      })
+    }
+    const agent = agents.get(sessionId)
+    if (agent === undefined) {
+      throw new RemoteError('expert/optimization-unavailable', `session "${sessionId}" has no live Agent`, {
+        sessionId,
+        reason: 'the Session must be open before its expert can be optimized',
+      })
+    }
+    const presetId = this.composedPreset(agent.ctx)
+    if (presetId === undefined) {
+      throw new RemoteError('expert/optimization-unavailable', `session "${sessionId}" uses no Agent preset`, {
+        sessionId,
+        reason: 'the Session is not using an expert',
+      })
+    }
+    const resolvedExpert = await this.resolveExpert(presetId)
+    const refinement = this.selfCtx.sessionProjections.stateOf(agent.session, 'expertRefinement')
+    const answer = refinement?.recent.find(message => message.messageId === targetMessageId)
+    const loggedPrompt = answer?.prompt
+    if (loggedPrompt === undefined || refinement === undefined) {
+      throw new RemoteError('expert/optimization-unavailable', 'the selected answer has no logged expert prompt', {
+        sessionId,
+        reason: 'the answer must come from this expert Session',
+      })
+    }
+    const sessionVersion = await findExpertVersion(resolvedExpert.preset, loggedPrompt)
+    if (sessionVersion === undefined) {
+      throw new RemoteError('expert/optimization-unavailable', 'the logged expert prompt has no stored version', {
+        sessionId,
+        reason: 'the expert files changed outside version management',
+      })
+    }
+    const expert: ExpertDocument = {
+      ...resolvedExpert.document,
+      currentVersion: sessionVersion,
+      prompt: loggedPrompt,
+    }
+    const task = buildExpertOptimizationTask(
+      agent,
+      expert,
+      refinement.recent,
+      targetMessageId,
+      this.expertConfig,
+    )
+    const previous = this.expertProposalBySession.get(sessionId)
+    if (previous !== undefined) await this.retireExpertOptimization(previous)
+    const proposalId = brandString<ExpertProposalId>(randomUUID())
+    const operationDeadline = deadline(
+      signal,
+      this.expertConfig.optimizationTimeoutMs,
+      'EXPERT_PROMPT_OPTIMIZATION_TIMEOUT',
+    )
+    let run: ExpertSubagentRun
+    try {
+      run = await agent.runMaintenance(maintenanceSignal => subagents.start('spawn', {
+        parent: agent,
+        label: '专家提示词优化',
+        prompt: task.prompt,
+        promptContext: task.promptContext,
+        outputSchema: EXPERT_OPTIMIZATION_OUTPUT_SCHEMA,
+        signal: AbortSignal.any([operationDeadline.signal, maintenanceSignal]),
+        agentPreset: 'standard',
+        persona: EXPERT_OPTIMIZATION_PERSONA,
+        agentOptions: { maxTokens: this.expertConfig.maxOptimizationOutputTokens },
+      }))
+    } catch (error) {
+      operationDeadline[Symbol.dispose]()
+      if (error instanceof RemoteError) throw error
+      throw new RemoteError('expert/optimization-unavailable', `专家提示词优化失败：${String(error)}`, {
+        sessionId,
+        reason: String(error),
+      })
+    }
+    const held = { sessionId, run, deadline: operationDeadline }
+    this.expertProposalBySession.set(sessionId, proposalId)
+    this.expertProposals.set(proposalId, held)
+    void this.settleExpertOptimization(held, proposalId, expert, targetMessageId)
+    return { proposalId, childSessionId: run.id }
+  }
+
+  /**
+   * Accept the exact server-held proposal reviewed in the right Sidebar.
+   * @param sessionId - Session that requested the proposal.
+   * @param proposalId - opaque server-held proposal identity.
+   * @param revisedPrompt - complete user-reviewed prompt to commit.
+   * @returns the newly committed expert document.
+   */
+  @Remote('acceptExpertOptimization')
+  async remoteExportAcceptExpertOptimization(
+    sessionId: SessionId,
+    proposalId: ExpertProposalId,
+    revisedPrompt: string,
+  ): Promise<ExpertDocument> {
+    const held = this.expertProposals.get(proposalId)
+    if (held === undefined || held.sessionId !== sessionId) {
+      throw new RemoteError('expert/optimization-unavailable', 'the refinement proposal is no longer available', {
+        sessionId,
+        reason: 'run prompt optimization again',
+      })
+    }
+    const { proposal } = held
+    if (proposal === undefined) {
+      throw new RemoteError('expert/optimization-unavailable', 'the refinement proposal is still running', {
+        sessionId,
+        reason: 'wait for the optimization Agent to finish',
+      })
+    }
+    if (proposal.status !== 'changed') {
+      throw new RemoteError('expert/optimization-unavailable', 'a no-change proposal cannot be accepted', {
+        sessionId,
+        reason: proposal.summary,
+      })
+    }
+    const { preset, document } = await this.resolveExpert(proposal.expertId)
+    const input = {
+      name: document.name,
+      welcome: document.welcome,
+      prompt: revisedPrompt,
+      ...document.icon === undefined ? {} : { icon: document.icon },
+    }
+    validateExpertInput(document.id, input, this.expertConfig)
+    if (revisedPrompt === proposal.originalPrompt) {
+      throw new RemoteError('expert/optimization-unavailable', 'the reviewed prompt has no change to save', {
+        sessionId,
+        reason: 'edit the proposed prompt before accepting it',
+      })
+    }
+    const changes = revisedPrompt === proposal.revisedPrompt
+      ? proposal.changes
+      : [{ before: proposal.originalPrompt, after: revisedPrompt, reason: proposal.summary }]
+    const saved = await updateExpert(
+      preset,
+      proposal.baseVersion,
+      input,
+      proposal.summary,
+      changes,
+    )
+    this.standing.delete(proposal.expertId)
+    this.expertProposals.delete(proposalId)
+    this.expertProposalBySession.delete(sessionId)
+    const agent = this.selfCtx.get('agents')?.get(sessionId)
+    if (agent !== undefined) this.applyExpertPrompt(agent, saved, 'optimization-accepted')
+    return saved
+  }
+
+  /**
+   * Discard one browser review and cancel its child Agent when still running.
+   * @param sessionId - parent expert Session.
+   * @param proposalId - optimization identity returned at start.
+   */
+  @Remote('dismissExpertOptimization')
+  async remoteExportDismissExpertOptimization(
+    sessionId: SessionId,
+    proposalId: ExpertProposalId,
+  ): Promise<void> {
+    const held = this.expertProposals.get(proposalId)
+    if (held === undefined || held.sessionId !== sessionId) return
+    await this.retireExpertOptimization(proposalId)
   }
 
   /**

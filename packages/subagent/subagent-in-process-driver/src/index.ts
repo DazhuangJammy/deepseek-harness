@@ -119,9 +119,10 @@ export async function startInProcessRun(
   const inherited = captureDelegatedPolicyOverrides(parent)
 
   let structured: StructuredAttachment | undefined
-  const setup = (childCtx: Context, child: Agent): void => {
+  const setup = async (childCtx: Context, child: Agent): Promise<void> => {
     appendDelegatedPolicyOverrides(child.session, inherited)
-    applyChildComposition(childCtx, parent, {
+    await applyChildComposition(childCtx, parent, {
+      agentPreset: request.agentPreset,
       persona: request.persona,
       toolFilter: request.toolFilter,
     })
@@ -134,7 +135,7 @@ export async function startInProcessRun(
   const handle = await parent.ctx.agents.create({
     sessionId: childId,
     parentAgent: parent,
-    meta: childSessionMeta(parent, childDepth, seed !== undefined),
+    meta: childSessionMeta(parent, childDepth, seed !== undefined, request.agentPreset),
     ...seed !== undefined ? { seed } : {},
     ...seed === undefined ? {} : { inheritedEventCount: activationBoundary },
     agentOptions: resolveChildAgentOptions(parent, request.agentOptions, childDepth),
@@ -145,6 +146,7 @@ export async function startInProcessRun(
     handle,
     request.signal,
     request.prompt,
+    request.promptContext,
     childId,
     activationBoundary,
     structured,
@@ -159,6 +161,7 @@ function drivePublishedRun(
   handle: AgentHandle,
   signal: AbortSignal,
   prompt: ContentBlock[],
+  promptContext: ResolvedSubagentStartRequest['promptContext'],
   childId: SessionId,
   boundary: SessionLogOffsetType,
   structured: StructuredAttachment | undefined,
@@ -178,6 +181,7 @@ function drivePublishedRun(
   const result: Promise<SubagentResult> = (async () => {
     try {
       if (!flags.cancelled) {
+        if (promptContext !== undefined) child.inject(promptContext)
         child.followup(createUserMessage({ content: prompt, source: { kind: 'user' } }))
         await child.whenIdle()
       }

@@ -80,7 +80,7 @@ kind: "package-reference"
 
 ### 运行流程
 
-`start` 时，从父级事件日志中截取截至最后一个 `turn/end` 的前缀；共享驱动器随后以该初始内容创建子 agent，应用相同的 persona、工具过滤器与结构化输出设置，驱动一项任务，读取子 agent 自身的最终输出，并执行 dispose（资源释放）以等待所有工作完全停稳。该提供方声明 `agentOptions`，以及与 spawn 相同的输出、深度、过滤与 persona 能力。`prepareContinuable` 在创建时只捕获一次前缀，因为该前缀会成为子 agent 自身持久保存的 transcript（文本记录）的一部分。
+`start` 时，从父级事件日志中截取截至最后一个 `turn/end` 的前缀；共享驱动器随后以该初始内容创建子 agent，应用相同的提示词上下文、persona、工具过滤器与结构化输出设置，驱动一项任务，读取子 agent 自身的最终输出，并执行 dispose（资源释放）以等待所有工作完全停稳。该提供方声明 `agentOptions` 与 `promptContext`，以及与 spawn 相同的输出、深度、过滤与 persona 能力。`prepareContinuable` 在创建时只捕获一次前缀，因为该前缀会成为子 agent 自身持久保存的 transcript（文本记录）的一部分。
 
 ### 生命周期绑定
 
@@ -111,7 +111,7 @@ base 组合包与 ACP（Agent Client Protocol）/headless 示例在委派工具�
 
 #### 模型看到什么
 
-子 agent 先接收由父级已配平的已完成轮次构成的前缀，再逐字接收新的任务内容。配置的 persona 会在子 agent 的全新作用域中遮蔽提示词文本；工具限制会过滤其全局协议 schema、可执行工具查找与 PTC mode SDK 绑定，但不影响独立指导内容。父级的工具视图与权限不会被继承；可选的结构化输出请求会添加仅属于子 agent 的约定；父级当前进行中的轮次会被排除。
+子 agent 先接收由父级已配平的已完成轮次构成的前缀、可选的已记录 `promptContext`，再逐字接收新的任务内容。配置的 persona 会在子 agent 的全新作用域中遮蔽提示词文本；工具限制会过滤其全局协议 schema、可执行工具查找与 PTC mode SDK 绑定，但不影响独立指导内容。父级的工具视图与权限不会被继承；可选的结构化输出请求会添加仅属于子 agent 的约定；父级当前进行中的轮次会被排除。
 
 #### Token 影响
 

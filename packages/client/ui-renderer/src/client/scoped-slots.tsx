@@ -11,7 +11,7 @@ import {
   type StoredEntry, type Translate,
 } from '@deepseek-ai/dsh-client-ui-slots'
 import {
-  HostContext, RootStandardProvider, ScopeProvider, SlotAssemblyError,
+  FixedSessionScopeProvider, HostContext, RootStandardProvider, ScopeProvider, SlotAssemblyError,
   keyedObservableHook, maybeObservableHook, observableHook, useHost, useRootBinding,
   useScopeBinding,
 } from './bindings.tsx'
@@ -29,6 +29,40 @@ interface BoundSlotInject {
 type RenderSlotBinding = (key: string, owner: object, opts?: RenderOpts) => ReactNode
 
 type RenderSlotChainBinding = (key: string, owner: object, opts?: ChainRenderOpts) => ReactNode
+
+/** Fixed-Session renderer bound to one registration's explicit slot allowlist. */
+const fixedSessionSlotViewCache = new WeakMap<StoredEntry, FC<{
+  sessionId: string
+  slot: string
+  owner: object
+  options?: RenderOpts
+}>>()
+
+function fixedSessionSlotView(host: SlotRendererHost, entry: StoredEntry): FC<{
+  sessionId: string
+  slot: string
+  owner: object
+  options?: RenderOpts
+}> {
+  let View = fixedSessionSlotViewCache.get(entry)
+  if (View !== undefined) return View
+  const authorized = new Set(entry.fixedSessionSlots ?? [])
+  View = function FixedSessionSlotView({ sessionId, slot, owner, options }): ReactNode {
+    if (!authorized.has(slot)) {
+      throw new SlotOwnershipError(`fixed Session slot '${slot}' is not authorized by this entry`)
+    }
+    if (host.specOf(slot)?.scope !== 'session') {
+      throw new SlotOwnershipError(`fixed Session slot '${slot}' is not a declared strict-Session slot`)
+    }
+    return (
+      <FixedSessionScopeProvider sessionId={sessionId}>
+        <SlotOutlet slotKey={slot} ownerProps={owner} opts={options} />
+      </FixedSessionScopeProvider>
+    )
+  }
+  fixedSessionSlotViewCache.set(entry, View)
+  return View
+}
 
 /**
  * Per-entry renderSlot bindings. The binding is identity-stable per entry
@@ -471,6 +505,9 @@ function standardKit(
       }
       kit['SessionProvider'] = scopeAreaProvider(adapter)
     }
+  }
+  if (entry.fixedSessionSlots !== undefined) {
+    kit['FixedSessionSlotView'] = fixedSessionSlotView(host, entry)
   }
   return { kit, standard, actions: store?.actions }
 }

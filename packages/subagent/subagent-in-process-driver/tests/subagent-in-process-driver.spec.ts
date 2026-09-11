@@ -67,6 +67,25 @@ describe('startInProcessRun', () => {
     expect(ctx.agents.get(run.id)).toBeUndefined()
   })
 
+  it('logs prompt context before the ordinary child prompt', async () => {
+    const { ctx, parent } = await setup([textResponse('driver answer')])
+    const promptContext = createUserMessage({
+      content: [{ type: 'text', text: 'private optimization evidence' }],
+      source: { kind: 'plugin', plugin: 'expert-prompt-refiner' },
+    })
+    const run = await startInProcessRun({ ...request(parent), promptContext }, {})
+    await run.result
+    const messages = ctx.agents.get(run.id)!.session.snapshotEvents()
+      .filter(event => event.type === 'user/message')
+
+    expect(messages.slice(0, 2).map(event => event.data.source)).toEqual([
+      { kind: 'plugin', plugin: 'expert-prompt-refiner' },
+      { kind: 'user' },
+    ])
+    expect(messages[0]?.data.content).toEqual(promptContext.content)
+    await run.dispose()
+  })
+
   it('uses explicit child model selectors when the parent has none and preserves its cwd', async () => {
     const { ctx } = await setup([textResponse('driver answer')])
     const parent = await ctx.agentLoop.create(SessionId('bare-parent'), {}, { cwd: '/workspace' })

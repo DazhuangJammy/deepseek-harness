@@ -549,6 +549,13 @@ async compositionInventory(): Promise<AgentPresetComposition[]>
 async resolve(id?: string): Promise<AgentPreset>
 
 /**
+ * Make a newly seeded ordinary branch use the expert's current version.
+ * @param agent - unpublished branch Agent after its recorded preset is mounted.
+ * @returns whether a newer prompt than the branch history was applied.
+ */
+async applyLatestExpertPromptForBranch(agent: Agent): Promise<boolean>
+
+/**
  * Compose one agent from a preset: ensure the preset's standing mount, then
  * parent the agent's scope key to it so the mount's registrations and
  * listeners cover this agent.
@@ -601,6 +608,76 @@ composeFrom(agentCtx: Context, parentCtx: Context): string | undefined
  * @returns the preset id, or undefined when the agent joined none.
  */
 composedPreset(agentCtx: Context): string | undefined
+
+/**
+ * List locally authored experts independently from the Agent-mode roster.
+ * @returns current expert rows and whether a writable root is available.
+ */
+@Remote('listExperts') async remoteExportListExperts(): Promise<ExpertRoster>
+
+/**
+ * Read one expert prompt, metadata, and version history.
+ * @param id - expert preset id.
+ * @returns the complete current expert document.
+ */
+@Remote('readExpert') async remoteExportReadExpert(id: string): Promise<ExpertDocument>
+
+/**
+ * Read one immutable prompt version beside its immediate predecessor.
+ * @param id - expert preset id.
+ * @param version - selected stored version.
+ * @returns both prompt texts and the selected version record.
+ */
+@Remote('readExpertVersion') async remoteExportReadExpertVersion(id: string, version: number): Promise<ExpertVersionComparison>
+
+/**
+ * Create a self-contained Chat-mode expert in the user preset root.
+ * @param id - new preset directory id.
+ * @param name - display name.
+ * @param welcome - browser-only first-message cue.
+ * @param prompt - complete expert system prompt.
+ * @param icon - optional picker icon.
+ * @returns the created version-one document.
+ */
+@Remote('createExpert') async remoteExportCreateExpert( id: string, name: string, welcome: string, prompt: string, icon?: ExpertIcon, ): Promise<ExpertDocument>
+
+/**
+ * Save editor fields, appending a version when the prompt text changed.
+ * @param sessionId - currently displayed Session, updated only when it runs this expert.
+ * @param id - expert preset id.
+ * @param expectedVersion - version the editor loaded.
+ * @param name - display name.
+ * @param welcome - browser-only first-message cue.
+ * @param prompt - complete expert system prompt.
+ * @param icon - optional picker icon.
+ * @returns the committed expert document.
+ */
+@Remote('saveExpert') async remoteExportSaveExpert( sessionId: SessionId, id: string, expectedVersion: number, name: string, welcome: string, prompt: string, icon?: ExpertIcon, ): Promise<ExpertDocument>
+
+/**
+ * Generate one server-held local prompt revision from a selected assistant message.
+ * @param sessionId - live expert Session.
+ * @param targetMessageId - finalized answer ending the evidence window.
+ * @param signal - caller cancellation, combined with the parent Agent maintenance signal.
+ * @returns the child Session identity and server-held proposal identity; no expert file is changed.
+ */
+@Remote('optimizeExpert') async remoteExportOptimizeExpert( sessionId: SessionId, targetMessageId: MessageId, signal: AbortSignal, ): Promise<ExpertOptimizationRun>
+
+/**
+ * Accept the exact server-held proposal reviewed in the right Sidebar.
+ * @param sessionId - Session that requested the proposal.
+ * @param proposalId - opaque server-held proposal identity.
+ * @param revisedPrompt - complete user-reviewed prompt to commit.
+ * @returns the newly committed expert document.
+ */
+@Remote('acceptExpertOptimization') async remoteExportAcceptExpertOptimization( sessionId: SessionId, proposalId: ExpertProposalId, revisedPrompt: string, ): Promise<ExpertDocument>
+
+/**
+ * Discard one browser review and cancel its child Agent when still running.
+ * @param sessionId - parent expert Session.
+ * @param proposalId - optimization identity returned at start.
+ */
+@Remote('dismissExpertOptimization') async remoteExportDismissExpertOptimization( sessionId: SessionId, proposalId: ExpertProposalId, ): Promise<void>
 
 /**
  * Read one preset's composition text.
@@ -730,7 +807,7 @@ async recompose(agentCtx: Context, id: string): Promise<AgentPreset>
 async standingKeyFor(id?: string): Promise<ScopeKey>
 ```
 
-Types: [ScopeKey](scope.zh.md)
+Types: [MessageId](llm-streaming.zh.md) · [ScopeKey](scope.zh.md)
 
 Source: [`packages/preset/agent-presets/src/index.ts`](../../packages/preset/agent-presets/src/index.ts)
 
@@ -1277,6 +1354,29 @@ One session committed a different agent preset to its durable log. Consumers inv
  * @param agentPreset - the preset recorded by the committed selection.
  */
 'agent-preset/selected'(sessionId: SessionId, agentPreset: string): void
+```
+
+Source: [`packages/preset/agent-presets/src/types.ts`](../../packages/preset/agent-presets/src/types.ts)
+
+<a id="expert-events"></a>
+
+### `expert/*` events
+
+<a id="expertoptimization-settled--emit"></a>
+
+#### `expert/optimization-settled` — emit
+
+One expert optimization child settled for browser review.
+
+```ts cordis-catalog
+/**
+ * One expert optimization child settled for browser review.
+ * @mode emit
+ * @param sessionId - parent expert Session.
+ * @param proposalId - optimization identity reserved before child creation.
+ * @param outcome - validated candidate or caller-safe failure.
+ */
+'expert/optimization-settled'( sessionId: SessionId, proposalId: ExpertProposalId, outcome: ExpertOptimizationOutcome, ): void
 ```
 
 Source: [`packages/preset/agent-presets/src/types.ts`](../../packages/preset/agent-presets/src/types.ts)

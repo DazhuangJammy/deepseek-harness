@@ -29,7 +29,7 @@ kind: "package-library"
 
 ### 四个 props share
 
-每个已注册组件都会收到由四个 share 组合而成的 props：运行时 share（父级 renderSlot 调用点的 `owner`，加上会话标准工具包与全局席位）、child render share（静态缩窄到已声明 children key 的 `renderSlot`）、store share（已声明句柄的 selector 钩子与移除 draft 的 actions），以及业务 share（从 `inject` factory 返回值推断）。组件引用 `ComposedProps`；它们绝不在本地重新定义任何 share 的类型。
+每个已注册组件都会收到由四个 share 组合而成的 props：运行时 share（父级 renderSlot 调用点的 `owner`，加上会话标准工具包与全局席位）、child render share（静态缩窄到已声明 children key 的 `renderSlot`）、store share（已声明句柄的 selector 钩子与移除 draft 的 actions），以及业务 share（从 `inject` factory 返回值推断）。组件引用 `ComposedProps`；它们绝不在本地重新定义任何 share 的类型。必须嵌入既有 Session slot 的 entry 还可以在 `fixedSessionSlots` 中列出准确 key，并消费 `PropsFixedSessionSlots`；renderer 随后会提供缩窄到该 allowlist 的固定 binding 视图，但不会授予声明所有权。
 
 ### Store 席位
 
@@ -37,7 +37,7 @@ register 调用可以用 `store: defineStore(...)` 声明 store 席位：`init` 
 
 ### 声明纪律
 
-声明即认领：注册条目成为唯一被允许渲染该键的条目；注册未声明 slot、声明已声明过的子项、在两个 scope 下挂载同一个共享句柄、或注册缺少 `select` 的 chain，都会在加载时抛出。条目的 disposer 会递归移除其声明的子 slot——账本行、贡献与 store 挂载都随同一生命周期结束而移除。
+声明即认领：注册条目成为唯一被允许渲染该键的条目；注册未声明 slot、声明已声明过的子项、在两个 scope 下挂载同一个共享句柄、或注册缺少 `select` 的 chain，都会在加载时抛出。`fixedSessionSlots` 是一项独立的只读复用权限，只适用于既有 Session slot；renderer 会拒绝该注册列表之外的任何 key。条目的 disposer 会递归移除其声明的子 slot——账本行、贡献与 store 挂载都随同一生命周期结束而移除。
 
 -----
 

@@ -80,7 +80,7 @@ One difference from spawn, expressed as data: the backend computes the balanced 
 
 ### Run flow
 
-On `start`, the prefix is sliced from the parent's event log up to and including the last `turn/end`; the shared driver then creates the child with that seed, applies the same persona, tool-filter, and structured-output setup, drives one task, reads the child's own final output, and disposes quiescently. The provider advertises `agentOptions` plus the same output, depth, filter, and persona capabilities as spawn. `prepareContinuable` captures the prefix once, at creation, because it becomes part of the child's own durable transcript.
+On `start`, the prefix is sliced from the parent's event log up to and including the last `turn/end`; the shared driver then creates the child with that seed, applies the same prompt-context, persona, tool-filter, and structured-output setup, drives one task, reads the child's own final output, and disposes quiescently. The provider advertises `agentOptions` and `promptContext` plus the same output, depth, filter, and persona capabilities as spawn. `prepareContinuable` captures the prefix once, at creation, because it becomes part of the child's own durable transcript.
 
 ### Lifecycle binding
 
@@ -111,7 +111,7 @@ Read these pages when the package-level contract is not enough; they move from t
 
 #### What the model sees
 
-The child receives the parent's balanced completed-turn prefix, then the new task content verbatim. A configured persona shadows prompt text in the child's fresh scope; a tool restriction filters its global wire schemas, executable lookup, and PTC mode SDK bindings but not standalone guidance. The parent's tool view and authority are not inherited; an optional structured-output request adds a child-only contract; the parent's current in-flight turn is excluded.
+The child receives the parent's balanced completed-turn prefix, optional logged `promptContext`, then the new task content verbatim. A configured persona shadows prompt text in the child's fresh scope; a tool restriction filters its global wire schemas, executable lookup, and PTC mode SDK bindings but not standalone guidance. The parent's tool view and authority are not inherited; an optional structured-output request adds a child-only contract; the parent's current in-flight turn is excluded.
 
 #### Token effect
 

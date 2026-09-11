@@ -161,6 +161,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         throws: ['when no configured root supplies that id.'],
       },
       {
+        signature: 'async applyLatestExpertPromptForBranch(agent: Agent): Promise<boolean>',
+        description: 'Make a newly seeded ordinary branch use the expert\'s current version.',
+        parameters: [{ name: 'agent', description: 'unpublished branch Agent after its recorded preset is mounted.' }],
+        returns: 'whether a newer prompt than the branch history was applied.',
+      },
+      {
         signature: 'async mount(agentCtx: Context, id?: string): Promise<AgentPreset>',
         description: 'Compose one agent from a preset: ensure the preset\'s standing mount, then parent the agent\'s scope key to it so the mount\'s registrations and listeners cover this agent.\n\nCall from the agent factory\'s `setup(agentCtx)`; a rejection there rolls the agent creation back, so a broken preset never yields a half-composed session.',
         parameters: [{ name: 'agentCtx', description: 'the agent\'s scope context.' }, { name: 'id', description: 'the preset id, or `undefined` for {@link defaultId}.' }],
@@ -179,6 +185,53 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'The preset one live agent runs on.\n\nRead from the live scope chain rather than from the session, so it answers for an agent whose session has not recorded a preset yet — a child agent whose durable header is being built from its parent\'s composition.',
         parameters: [{ name: 'agentCtx', description: 'the agent\'s scope context.' }],
         returns: 'the preset id, or undefined when the agent joined none.',
+      },
+      {
+        signature: '@Remote(\'listExperts\') async remoteExportListExperts(): Promise<ExpertRoster>',
+        description: 'List locally authored experts independently from the Agent-mode roster.',
+        parameters: [],
+        returns: 'current expert rows and whether a writable root is available.',
+      },
+      {
+        signature: '@Remote(\'readExpert\') async remoteExportReadExpert(id: string): Promise<ExpertDocument>',
+        description: 'Read one expert prompt, metadata, and version history.',
+        parameters: [{ name: 'id', description: 'expert preset id.' }],
+        returns: 'the complete current expert document.',
+      },
+      {
+        signature: '@Remote(\'readExpertVersion\') async remoteExportReadExpertVersion(id: string, version: number): Promise<ExpertVersionComparison>',
+        description: 'Read one immutable prompt version beside its immediate predecessor.',
+        parameters: [{ name: 'id', description: 'expert preset id.' }, { name: 'version', description: 'selected stored version.' }],
+        returns: 'both prompt texts and the selected version record.',
+      },
+      {
+        signature: '@Remote(\'createExpert\') async remoteExportCreateExpert( id: string, name: string, welcome: string, prompt: string, icon?: ExpertIcon, ): Promise<ExpertDocument>',
+        description: 'Create a self-contained Chat-mode expert in the user preset root.',
+        parameters: [{ name: 'id', description: 'new preset directory id.' }, { name: 'name', description: 'display name.' }, { name: 'welcome', description: 'browser-only first-message cue.' }, { name: 'prompt', description: 'complete expert system prompt.' }, { name: 'icon', description: 'optional picker icon.' }],
+        returns: 'the created version-one document.',
+      },
+      {
+        signature: '@Remote(\'saveExpert\') async remoteExportSaveExpert( sessionId: SessionId, id: string, expectedVersion: number, name: string, welcome: string, prompt: string, icon?: ExpertIcon, ): Promise<ExpertDocument>',
+        description: 'Save editor fields, appending a version when the prompt text changed.',
+        parameters: [{ name: 'sessionId', description: 'currently displayed Session, updated only when it runs this expert.' }, { name: 'id', description: 'expert preset id.' }, { name: 'expectedVersion', description: 'version the editor loaded.' }, { name: 'name', description: 'display name.' }, { name: 'welcome', description: 'browser-only first-message cue.' }, { name: 'prompt', description: 'complete expert system prompt.' }, { name: 'icon', description: 'optional picker icon.' }],
+        returns: 'the committed expert document.',
+      },
+      {
+        signature: '@Remote(\'optimizeExpert\') async remoteExportOptimizeExpert( sessionId: SessionId, targetMessageId: MessageId, signal: AbortSignal, ): Promise<ExpertOptimizationRun>',
+        description: 'Generate one server-held local prompt revision from a selected assistant message.',
+        parameters: [{ name: 'sessionId', description: 'live expert Session.' }, { name: 'targetMessageId', description: 'finalized answer ending the evidence window.' }, { name: 'signal', description: 'caller cancellation, combined with the parent Agent maintenance signal.' }],
+        returns: 'the child Session identity and server-held proposal identity; no expert file is changed.',
+      },
+      {
+        signature: '@Remote(\'acceptExpertOptimization\') async remoteExportAcceptExpertOptimization( sessionId: SessionId, proposalId: ExpertProposalId, revisedPrompt: string, ): Promise<ExpertDocument>',
+        description: 'Accept the exact server-held proposal reviewed in the right Sidebar.',
+        parameters: [{ name: 'sessionId', description: 'Session that requested the proposal.' }, { name: 'proposalId', description: 'opaque server-held proposal identity.' }, { name: 'revisedPrompt', description: 'complete user-reviewed prompt to commit.' }],
+        returns: 'the newly committed expert document.',
+      },
+      {
+        signature: '@Remote(\'dismissExpertOptimization\') async remoteExportDismissExpertOptimization( sessionId: SessionId, proposalId: ExpertProposalId, ): Promise<void>',
+        description: 'Discard one browser review and cancel its child Agent when still running.',
+        parameters: [{ name: 'sessionId', description: 'parent expert Session.' }, { name: 'proposalId', description: 'optimization identity returned at start.' }],
       },
       {
         signature: 'async read(id: string): Promise<string>',
@@ -3275,6 +3328,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'change', description: 'domain, table (`\'\'` for global), key (`\'\'` for global), operation discriminant, and on `put` the new snapshot.' }],
   },
   {
+    name: 'expert/optimization-settled',
+    mode: 'emit',
+    signature: '\'expert/optimization-settled\'( sessionId: SessionId, proposalId: ExpertProposalId, outcome: ExpertOptimizationOutcome, ): void',
+    summary: 'One expert optimization child settled for browser review.',
+    description: 'One expert optimization child settled for browser review.',
+    parameters: [{ name: 'sessionId', description: 'parent expert Session.' }, { name: 'proposalId', description: 'optimization identity reserved before child creation.' }, { name: 'outcome', description: 'validated candidate or caller-safe failure.' }],
+  },
+  {
     name: 'feedback/committed',
     mode: 'parallel',
     signature: '\'feedback/committed\'(inspection: SessionInspection): void',
@@ -4201,6 +4262,50 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'EpochHeader',
     declaration: 'export interface EpochHeader {\n    config: LlmCallConfig;\n    adapterDefaults?: LlmCallConfigAdapterDefaults;\n    tools?: ToolSchema[];\n}',
+  },
+  {
+    name: 'ExpertDocument',
+    declaration: 'export interface ExpertDocument extends ExpertSummary {\n    readonly prompt: string;\n    readonly versions: readonly ExpertVersion[];\n}',
+  },
+  {
+    name: 'ExpertIcon',
+    declaration: 'export type ExpertIcon = \'sparkles\' | \'briefcase\' | \'graduation-cap\' | \'code\' | \'chart\';',
+  },
+  {
+    name: 'ExpertOptimizationOutcome',
+    declaration: 'export type ExpertOptimizationOutcome = {\n    readonly status: \'ready\';\n    readonly proposal: ExpertOptimizationProposal;\n} | {\n    readonly status: \'failed\';\n    readonly error: string;\n};',
+  },
+  {
+    name: 'ExpertOptimizationProposal',
+    declaration: 'export interface ExpertOptimizationProposal {\n    readonly proposalId: ExpertProposalId;\n    readonly expertId: string;\n    readonly targetMessageId: MessageId;\n    readonly baseVersion: number;\n    readonly status: \'changed\' | \'no-change\';\n    readonly summary: string;\n    readonly originalPrompt: string;\n    readonly revisedPrompt: string;\n    readonly changes: readonly ExpertPromptChange[];\n}',
+  },
+  {
+    name: 'ExpertOptimizationRun',
+    declaration: 'export interface ExpertOptimizationRun {\n    readonly proposalId: ExpertProposalId;\n    readonly childSessionId: SessionId;\n}',
+  },
+  {
+    name: 'ExpertPromptChange',
+    declaration: 'export interface ExpertPromptChange {\n    readonly before: string;\n    readonly after: string;\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'ExpertProposalId',
+    declaration: 'export type ExpertProposalId = Branded<\'ExpertProposalId\'>;',
+  },
+  {
+    name: 'ExpertRoster',
+    declaration: 'export interface ExpertRoster {\n    readonly experts: readonly ExpertSummary[];\n    readonly authorable: boolean;\n}',
+  },
+  {
+    name: 'ExpertSummary',
+    declaration: 'export interface ExpertSummary {\n    readonly id: string;\n    readonly name: string;\n    readonly welcome: string;\n    readonly currentVersion: number;\n    readonly updatedAt: number;\n    readonly icon?: ExpertIcon;\n}',
+  },
+  {
+    name: 'ExpertVersion',
+    declaration: 'export interface ExpertVersion {\n    readonly version: number;\n    readonly createdAt: number;\n    readonly summary: string;\n    readonly changes: readonly ExpertPromptChange[];\n}',
+  },
+  {
+    name: 'ExpertVersionComparison',
+    declaration: 'export interface ExpertVersionComparison {\n    readonly version: ExpertVersion;\n    readonly previousVersion: number | null;\n    readonly previousPrompt: string;\n    readonly prompt: string;\n}',
   },
   {
     name: 'FeedbackCategory',
@@ -5712,7 +5817,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SubagentCapabilities',
-    declaration: 'export interface SubagentCapabilities {\n    readonly agentOptions: boolean;\n    readonly outputSchema: boolean;\n    readonly depthLimit: boolean;\n    readonly toolFilter: boolean;\n    readonly persona: boolean;\n}',
+    declaration: 'export interface SubagentCapabilities {\n    readonly agentOptions: boolean;\n    readonly agentPreset?: boolean;\n    readonly promptContext?: boolean;\n    readonly outputSchema: boolean;\n    readonly depthLimit: boolean;\n    readonly toolFilter: boolean;\n    readonly persona: boolean;\n}',
   },
   {
     name: 'SubagentCatalog',
@@ -5784,7 +5889,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SubagentStartRequest',
-    declaration: 'export interface SubagentStartRequest {\n    readonly label?: string;\n    readonly prompt: ContentBlock[];\n    readonly parent: Agent;\n    readonly signal: AbortSignal;\n    readonly agentOptions?: AgentOptions;\n    readonly outputSchema?: ObjectJsonSchema;\n    readonly maxDepth?: number;\n    readonly toolFilter?: ToolRestriction;\n    readonly persona?: string;\n}',
+    declaration: 'export interface SubagentStartRequest {\n    readonly label?: string;\n    readonly prompt: ContentBlock[];\n    readonly promptContext?: UserMessage;\n    readonly parent: Agent;\n    readonly signal: AbortSignal;\n    readonly agentOptions?: AgentOptions;\n    readonly agentPreset?: string;\n    readonly outputSchema?: ObjectJsonSchema;\n    readonly maxDepth?: number;\n    readonly toolFilter?: ToolRestriction;\n    readonly persona?: string;\n}',
   },
   {
     name: 'SubagentStopReason',

@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-使用本包可以为新的 Web GUI 会话选择 agent preset、在会话标题中查看当前 preset，并在设置中管理可用 preset。Agent 模式选择器默认显示；设置可以隐藏它，而不会改变运行中或历史会话。preset 在会话创建时即固定，因此更改选择或默认值只影响此后创建的会话。如果部署未提供任何 preset，这些控件保持隐藏，每个会话都使用宿主组装。
+使用本包可以为新的 Web GUI 会话选择 agent preset、管理对话专家，并检查局部专家提示词优化。Agent 模式选择器默认显示；设置可以隐藏它，而不会改变运行中或历史会话。专家复用 preset 组装，并增加欢迎语、提示词编辑器、版本记录，以及一个先展示子 Agent 运行、再在右侧栏打开可编辑左右对比的助手消息操作。如果部署未提供任何 preset，模式控件保持隐藏，每个会话都使用宿主组装。
 
 ## 目录
 
@@ -27,7 +27,7 @@ kind: "package-reference"
 
 与设置和对话包一起挂载本插件；管理分区随后显示一个默认开启的可见性开关。关闭期间，新建会话 chip 不出现，宿主会依据部署默认值（随附 Web bundle 中为 `standard`）组装未指名会话。开启时会恢复已保存的用户默认值；尚未保存时则使用部署默认值；该默认值会同时带到当前空白任务上。chip 中的选择本身只为下一个空白会话暂存一次。再次关闭选择器会以同样方式把当前空白任务带回部署默认值，并丢弃尚未使用的暂存选择；已开始及历史会话的标签、组装与已记录历史均保持不变。
 
-随附名单包含 `standard`、`ptc`、`minimal`、`cordis` 与 `chat`。`chat` preset 保留普通 Session 记录与模型路由，同时不加载工具、Skills、项目指令、运行时上下文及压缩。
+随附名单包含 `standard`、`ptc`、`minimal`、`cordis` 与 `chat`。`chat` preset 保留普通 Session 记录与模型路由，使用标准模式的 shell 与文件系统工具读取上传文件，同时不加载 Skills、项目指令、运行时上下文及压缩。
 
 ### 管理名单
 
@@ -37,6 +37,12 @@ kind: "package-reference"
 
 名单携带自指的 `cordis` preset 时，其虚线添加卡在选择器开启前保持禁用。开启后，它会暂存 `cordis` 并启动新会话——分区关闭设置面板，新建会话 chip 自己的应用器负责组装工作区流程产出的空白会话。
 
+### 专家
+
+编辑器的加号菜单会打开可搜索的专家选择器。「专家列表」固定排在首项，「新增专家」固定紧随其后，再排列所有专家。专家绝不会出现在 Agent preset 选择器或设置名单里。每个专家行把版本放在名字旁边，把编辑固定在最右侧，并在 hover 或键盘 focus 时显示；触屏布局始终显示编辑。选择专家会把受管的聊天组装应用到当前空白 Session，不会把提示词显示成用户消息。空白对话会显示专家欢迎语，提示第一句话。「专家列表」、「新增专家」与编辑会用所选管理页面替换已打开的优化结果；专家列表页也提供「新增专家」。新增专家时，系统会自动分配一个不显示的稳定标识符。新增与编辑会在右侧栏显示图标（可选）、名字、欢迎语、提示词和版本记录字段。保存修改后的提示词会在当前 Session 使用该专家时应用新版本，其他已打开 Session 保持各自安装的提示词。选择某条版本记录会用同一个左右高亮界面只读查看该版与上一版提示词；只改元数据不会生成版本记录。
+
+专家 Session 中每条已完成的助手消息都带有“优化专家提示词”操作。该操作会立即展开右侧栏，并复用普通对话视图展示子 Agent 的上下文、精简中文任务、思考、skill 加载与工具，但不显示输入框。完整专家提示词和对话证据使用既有的折叠“上下文注入”行，不再显示成用户气泡。思考使用普通的折叠项与实时单行摘要。最终候选稿通过既有结构化输出工具提交，不会在助手正文中打印 JSON。启动和运行期间，标题栏最右侧始终显示“停止优化提示词”按钮；它会中断启动或释放已发布的子 Agent。有修改的候选稿会左右完整显示当前与建议提示词，用词级高亮标出差异并列出中文修改依据。建议提示词可以直接编辑，差异高亮会在确认前重新计算；没有修改的候选稿会说明原因。“保留当前版本”会丢弃候选稿；只有“确认新版本”会写入文件。
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -45,7 +51,7 @@ kind: "package-reference"
 <details>
 <summary>实现细节——点击展开</summary>
 
-设置分区通过现有的 `settings.update` 写入宿主的 `agent-presets` 命名空间。可见性开关只设置 `modeSelectionEnabled`；仅当选择器显示时，设为默认动作才会写入 `default`。两种写入之后，都由宿主名单给出当前生效的默认值，再由 chip controller 的 `agentPresets/select` 链路把它带到同一个仍为空白的会话；这些界面只使用这一条会话修改 API。展示选项与宿主的生效可见性来自 `agentPresets/list`——名单本身已标记宿主当前生效的默认值并携带 `modeSelectionEnabled`，因此非 loopback 的只读客户端无需内省 settings schema 也能保持一致。设置分区首次加载时查询 `settings.canOpenAgentPresetDirectory()`，并把结果与名单合并；查询失败只会移除原生打开动作。新建会话 chip 仅在 `modeSelectionEnabled` 为 `true` 时渲染；隐藏它会丢弃待处理的暂存选择及本地菜单或失败横幅状态，而标题标签保持注册并读取每个会话已记录的 preset。暂存值在会话到达时应用（既覆盖工作区连接新建的会话，也覆盖它复用的空白会话），被拒绝时丢弃。系统会通过 composer 列上方的瞬时横幅提示拒绝结果，因为 chip 的标签此时已经恢复原值，而被宿主拒绝挂载的 preset 正是发现过程报告为健康的那一种——它的名单卡片上没有任何原因可供回头查看。只有用户刚做出的选择会触发提示；会话成为当前会话时触发的应用器不会。[`dsh-client-connection`](../connection/README.zh.md) 使用同一浏览器会话认证 `agentPresets/read`、`agentPresets/copy`、`settings/openAgentPresetDirectory`、`agentPresets/deletePreset`、`agentPresets/list` 及其他所有宿主 API 方法。组装仍会指明一个会话所运行的插件，因此读取属于侦察，而复制、删除与设置模块拥有的目录打开操作负责管理名单并驱动宿主桌面。分区在自身操作、`settings/document-updated` 与 `connection/reset` 时重读，因为组装文件在浏览器之外编辑，协议链路不会通知文件变动。
+设置分区通过现有的 `settings.update` 写入宿主的 `agent-presets` 命名空间。可见性开关只设置 `modeSelectionEnabled`；仅当选择器显示时，设为默认动作才会写入 `default`。两种写入之后，都由宿主名单给出当前生效的默认值，再由 chip controller 的 `agentPresets/select` 链路把它带到同一个仍为空白的会话；专家选择复用同一条受保护路径。展示选项与宿主的生效可见性来自 `agentPresets/list`，专家管理则使用 typed 专家端点和一个共享浏览器 store。专家 store 按 Session 保存优化状态，因此两个打开的对话不会交换候选稿。优化期间，`sessions.observeSubagent()` 会在不改变主 Session 选择的情况下打开子级事件窗口，renderer 注入的 `FixedSessionSlotView` 再把既有对话槽位绑定到该子级。既有指令菜单负责专家搜索与选择，右侧栏负责管理与检查。[`dsh-client-connection`](../connection/README.zh.md) 使用同一浏览器会话认证全部这些宿主方法。分区在自身操作、`settings/document-updated` 与 `connection/reset` 时重读，因为普通组装文件仍可能在浏览器之外编辑。
 
 </details>
 
@@ -66,11 +72,11 @@ kind: "package-reference"
 <a id="model-experience"></a>
 ## 模型体验
 
-间接影响，经由此后会话据以组装的 preset；它所选择的 preset 拥有所有面向模型的效果。
+间接地，通过所选 preset 和 [`dsh-agent-presets`](../../preset/agent-presets/README.zh.md) 所记录的一次性子 Agent 影响模型；进度与对比渲染自身不会增加任何模型可见内容。
 
 #### KV Cache 影响
 
-没有直接的失效影响。更改选择器可见性或默认值不会改变运行中会话的组装或前缀，也不会改变历史会话已记录的 preset；此后创建的会话依据它自己的组装建立自己的前缀。
+修改选择器可见性、默认值、未保存的编辑器字段或未确认候选稿，不会改变运行中 Session 的前缀。保存修改后的专家提示词或确认优化，只会通过 Host 工作流改变目标 Session 的后续请求；普通分支使用专家当前版本。每个已应用版本都会从新前缀重新开始复用。
 
 ## 已知限制与延期工作
 

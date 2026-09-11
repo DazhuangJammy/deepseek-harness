@@ -7,7 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
 import AgentRegistry, { type Agent } from '@deepseek-ai/dsh-agent'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import { createScope } from '@deepseek-ai/dsh-scope'
 import AgentPresets, { mountPreset } from '@deepseek-ai/dsh-agent-presets'
@@ -119,7 +119,7 @@ describe('DeepSeek plugin package inventory', () => {
 
     const id = SessionId('bare-agent')
     const agentScope = createScope(ctx, {})
-    ctx.agents.register({ id, ctx: agentScope.ctx, session: { id } } as unknown as Agent)
+    ctx.agents.register({ id, ctx: agentScope.ctx, session: Session.create(id) } as unknown as Agent)
     const bare = await ctx.deepseekLlmApiExtensions.prepare({ body: { messages: [] }, signal: SIGNAL, sessionId: id })
     expect(bare.fields.dsh_plugin_packages?.packages).toEqual([{ name: 'host-only', version: '3.0.0' }])
   })
@@ -217,7 +217,7 @@ describe('DeepSeek plugin package inventory', () => {
     const agentKey = {}
     const agentScope = createScope(ctx, agentKey, { parent: standingKey })
     const id = SessionId('preset-agent')
-    const agent = { id, ctx: agentScope.ctx, session: { id } } as unknown as Agent
+    const agent = { id, ctx: agentScope.ctx, session: Session.create(id) } as unknown as Agent
     ctx.agents.register(agent)
 
     const prepared = await ctx.deepseekLlmApiExtensions.prepare({ body: { messages: [] }, signal: SIGNAL, sessionId: id })

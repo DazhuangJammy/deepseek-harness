@@ -24,6 +24,12 @@
       "path": "../ui-conversation"
     },
     {
+      "path": "../ui-chat"
+    },
+    {
+      "path": "../ui-commands"
+    },
+    {
       "path": "../ui-primitives"
     },
     {
@@ -39,6 +45,9 @@
       "path": "../ui-settings"
     },
     {
+      "path": "../ui-sidebar-right"
+    },
+    {
       "path": "../ui-slots"
     },
     {
@@ -49,6 +58,12 @@
     },
     {
       "path": "../../preset/agent-presets"
+    },
+    {
+      "path": "../../llm/llm"
+    },
+    {
+      "path": "../../util/brand"
     },
     {
       "path": "../../core/session"

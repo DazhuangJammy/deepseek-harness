@@ -15,6 +15,8 @@ import { IconAgentPresetOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 // Type-only: pulls the ui-conversation SlotMap merge (the header actions).
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-agent-presets/types'
+import { expertIcon } from './ExpertIcon.tsx'
+import type { ExpertUiState } from './expert-store.ts'
 import type { AgentPresetSettingsState } from './settings-store.ts'
 import { presetDisplayText } from './locales.ts'
 import css from './AgentPresetLabel.module.css'
@@ -24,9 +26,13 @@ export interface AgentPresetLabelInjected {
   hooks: {
     /** Roster snapshot bound by the renderer as useAgentPresets. */
     agentPresets: SnapshotStore<AgentPresetSettingsState>
+    /** Chat-only expert roster used when the selected composition is an expert. */
+    expertUi: SnapshotStore<ExpertUiState>
   }
   /** Read the roster, so the label can show a name rather than an id. */
   load: () => Promise<void>
+  /** Read experts only when the Agent-mode roster cannot resolve the selected id. */
+  loadExperts: () => Promise<void>
 }
 
 /** Full component props. */
@@ -41,13 +47,15 @@ export type AgentPresetLabelProps =
  * @returns the label, or null when the session records no preset.
  */
 export function AgentPresetLabel({
-  sessionId, useSessions, useAgentPresets, load, t,
+  sessionId, useSessions, useAgentPresets, useExpertUi, load, loadExperts, t,
 }: AgentPresetLabelProps) {
   const preset = useSessions((state) => {
     const value = state.byId[sessionId]?.projectionValues?.agentPreset
     return typeof value === 'string' ? value : undefined
   })
   const options = useAgentPresets(state => state.options)
+  const option = options.find(entry => entry.id === preset)
+  const expert = useExpertUi(state => state.experts.find(entry => entry.id === preset))
 
   useEffect(() => {
     // Deployments that compose no presets never label anything, so the roster
@@ -55,14 +63,19 @@ export function AgentPresetLabel({
     if (preset !== undefined) void load()
   }, [preset, load])
 
+  useEffect(() => {
+    if (preset !== undefined && option === undefined) void loadExperts()
+  }, [preset, option, loadExperts])
+
   if (preset === undefined) return null
 
-  const option = options.find(entry => entry.id === preset)
   const text = option === undefined ? undefined : presetDisplayText(option, t)
+  const expertHint = expert?.welcome.trim() === '' ? undefined : expert?.welcome
+  const Icon = expert === undefined ? IconAgentPresetOutline16 : expertIcon(expert.icon)
   return (
-    <span className={css.label} title={text?.description ?? t('headerHint')}>
-      <IconAgentPresetOutline16 size={14} className={css.icon} />
-      {text?.name ?? preset}
+    <span className={css.label} title={text?.description ?? expertHint ?? t('headerHint')}>
+      <Icon size={14} className={css.icon} />
+      {text?.name ?? expert?.name ?? preset}
     </span>
   )
 }

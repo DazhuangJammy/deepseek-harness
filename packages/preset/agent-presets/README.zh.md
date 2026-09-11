@@ -27,7 +27,7 @@ kind: "package-reference"
 
 在需要让每个 agent 会话从 preset 文件获得自己的工具、提示词段落与 skill 的组装中挂载本包。每个会话都会命名一个 preset——显式指定或通过配置的默认值——并据此组装；没有本包时，会话只能回退到宿主组装挂载的内容。
 
-随附 Web 的 `standard`、`ptc` 与 `cordis` preset 包含[显式文件交付](../../client/ui-deliverables/README.zh.md#explicit-deliveries)。`minimal` preset 保留固定的双工具训练配置。
+随附 Web 的 `standard`、`ptc`、`cordis` 与 `chat` preset 使用相同的 shell 和文件系统能力读取上传文件。`standard`、`ptc` 与 `cordis` 还包含[显式文件交付](../../client/ui-deliverables/README.zh.md#explicit-deliveries)。`minimal` preset 保留固定的训练配置。
 
 ### preset 给会话带来什么
 
@@ -54,6 +54,7 @@ kind: "package-reference"
 | `roots` | `[]` | 按优先级排列的扫描目录；每项提供 `path`（开头的 `~` 会展开）与 `trust`（默认为 `user`） |
 | `includeShippedRoot` | `true` | 在全部已配置根目录之前，前置本包随附的 preset 作为 `system` 根目录 |
 | `includeUserRoot` | `true` | 在全部已配置根目录之后追加 `<dshHome>/.agent-presets` 作为 `user` 根目录 |
+| `experts` | 见生成目录 | 专家名字、欢迎语、提示词字节数、证据消息数、优化输入/输出与优化截止时间的限制 |
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-agent-presets)是每个受支持字段及其 JSDoc 的穷尽式真源。
 
@@ -76,6 +77,12 @@ agent-presets:
 创作即复制：创建 preset 会复制某个既有 preset 的整个目录——组装、展示元数据、skill 目录与资产——放进第一个 `user` 根目录。副本保留来源的描述，但拥有自己的 id 与可选显示名，因此调用方从不提供组装文本，一次复制也不会授予名单尚未携带的任何能力。创建之后的一切都发生在 preset 自己的文件里。
 
 以下情况会拒绝复制：id 不符合 `[a-z0-9][a-z0-9-]*`（id 会成为目录名）、id 已被占用（复制从不覆写）、或来源未知。删除只移除本地创作的 preset；随部署提供的 preset 不可删除。已在被删除 preset 上运行的会话会继续运行。
+
+### 创作与优化专家
+
+专家在内部使用受管的聊天模式 preset 组装，并包含 `expert.json`、作者填写的欢迎语，以及 `versions/` 下不可变的提示词文件。专家不会出现在 Agent 模式名单里，只通过专家端点列出。受管组装携带与 `chat` 相同的 shell 和文件系统工具；挂载时也会为旧版本创建的专家恢复这份组装。创建专家会写入版本 1。手动修改提示词或确认优化会追加下一个编号的提示词与 JSON 变更记录，再原子推进 `expert.json`；只改元数据不会增加版本。从已打开的专家 Session 保存提示词，也会让该 Session 的后续请求使用这个版本，其他已打开 Session 则保留各自安装的版本。新 Session 和普通分支使用专家当前版本；如果分支选择的对话前缀使用旧版，它会保留这段对话，并在下一次请求前记录提示词更新。每次写入都会带上读取时的版本；若发生冲突就失败，不会覆盖另一个编辑器保存的新版。读取单个版本会返回该版提示词及其紧邻的上一版，让客户端按需显示只读对比，无需一次加载全部历史提示词。
+
+提示词优化会启动一个使用 `standard` preset 的一次性子 Agent，沿用当前 Session 选择的模型路线，再用中文优化指令遮蔽其 persona。一条精简的中文首条用户消息会显式调用随附的 `expert-prompt-refiner` skill；位于其前方、由插件提供的 `promptContext` 携带专家提示词和截至选中回答的近期用户/助手证据。子 Session 会把两项输入连同普通 Agent、skill 与模型事件一起记录。中文 skill 要求先有明确修正、再有改好后的结果，保留无关提示词，并调用一次既有 `structured_output` 工具，提交完整候选稿以及中文 summary 和 reasons。Host 会根据原版与候选提示词确定精确替换文本，再在不修改专家文件的情况下暂存候选稿。确认会提交用户检查后的提示词、追加版本，并让当前 Session 的后续轮次使用该提示词。持久化的提示词应用事件会在恢复时重建手动保存、确认或分支选择的版本，但不会改写旧回答对应的系统提示词；如果文本发生变化，下一次模型请求会记录既有的系统提示词更新节点。
 
 ### 切换会话的 preset
 
@@ -112,6 +119,9 @@ agent-presets:
 | [`src/preset.ts`](src/preset.ts) | 词汇体系：preset id 规则、`AgentPreset` 与 `PresetRoot`、错误类型 |
 | [`src/mount.ts`](src/mount.ts) | 子树挂载、宿主 base-URL 处理、挂载审计、`write()` 抑制 |
 | [`src/authoring.ts`](src/authoring.ts) | 本地创作 preset 的复制/删除/读取、权限收紧 |
+| [`src/expert.ts`](src/expert.ts) | 专家元数据、不可变提示词版本，以及受保护的创建/更新 |
+| [`src/expert-optimizer.ts`](src/expert-optimizer.ts) | 证据选择、随附 skill 请求与输出校验 |
+| [`src/expert-session.ts`](src/expert-session.ts) | 有上限的证据与已应用专家提示词 Session 投影 |
 | [`src/metadata.ts`](src/metadata.ts) | `preset.yml` 展示元数据 |
 | [`src/session.ts`](src/session.ts) | `agent-preset/selected` 事件与 `agentPreset` Session 投影 |
 | [`src/types.ts`](src/types.ts) | client-safe 的协议载荷与 cordis 事件声明 |
@@ -158,11 +168,11 @@ agent-presets:
 <a id="model-experience"></a>
 ## 模型体验
 
-间接地，经由 preset 常驻组装安装的插件：这些插件拥有该 preset 向加入它的 agent 呈现的每个工具 schema、提示词段落与 skill。
+间接地，经由 preset 常驻组装安装的插件：这些插件拥有该 preset 向加入它的 agent 呈现的每个工具 schema、提示词段落与 skill。专家优化还会让一个独立的 `standard` 子 Agent 沿用当前 Session 选择的模型路线；子 Session 记录显式 skill 调用与模型工作，而候选稿不会进入父级对话历史。
 
 #### KV Cache 影响
 
-在一个 agent 的整个生命周期内保持前缀稳定：组装只装入一次，发生在 agent 发布之前、因而也在它的首个请求之前，且在 agent 运行期间不再重新读取。为新会话选择不同的 preset，只会为该会话建立不同的前缀，无法让任何已在运行的会话失去缓存复用。
+前缀在应用专家提示词版本之前保持稳定。普通 preset 文件在 agent 发布前安装，运行期间不会重新读取。保存或确认新版本只会替换目标 Session 后续轮次的完整提示词，分支则应用创建分支时的专家当前版本。每次替换都会从新前缀重新开始缓存复用；其他已打开 Session 保持原有提示词。
 
 ## 已知限制与延期工作
 
@@ -173,6 +183,7 @@ agent-presets:
 
 - **位于可写根目录之外的 preset 可被发现却无法删除**——`remove()` 拒绝任何不在第一个 `user` 根目录下的 preset，因此一个既配置了自有可写根、又保留 `includeUserRoot` 的部署，会列出并挂载 harness home 下的 preset，却对每次删除回答「它不在可写 preset 根目录之下」。只想要自有 preset 的部署应设置 `includeUserRoot: false`。
 - **会话一旦产出任何内容便无法更换 preset**——切换会把空白会话的父作用域重链到另一个常驻挂载，且仅限空白会话：在对话中途调换工具会抽走模型已调用的工具。
+- **只有当前专家版本能接受写入**——基础版本过旧的编辑器或旧 Session 会收到版本冲突并且必须重新加载；服务不会自动合并提示词文本。
 - **代际只以组装文件为键**——stamp 检查只察觉 `agent.cordis.yml` 的变化，察觉不到旁边 skill 文件或资产的编辑；那些编辑要等组装文件本身变动或进程重启才达到新会话。
 - **被替代的代际永不回收**——已加入的会话保持其运行所在的代际，而名单没有加入计数可以判断最后一个何时离开，因此整棵子树一直挂到进程结束。代价按代际计而非按会话计，但并非为零：`dsh-skill-filesystem` 默认监听自己的根目录，因此每一轮「编辑后建会话」都会新增一套活的 watcher。
 - **副本从不被实际挂载以校验**——它与来源逐字节相同，因此磁盘上已坏的来源会产出与来源同样损坏的副本；发现过程的健康检查会在下一次读取名单时把两行都标出来，而不是把失败推迟到会话启动。

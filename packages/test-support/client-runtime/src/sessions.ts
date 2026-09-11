@@ -194,10 +194,11 @@ export class TestSessions implements ISessions {
   /** The useSessions standard feed (list rows + current selection). */
   readonly list: SnapshotStore<SessionListState>
   private readonly records = new Map<SessionId, SessionRecord>()
+  private readonly subagentAddresses = new Map<SessionId, SubagentAddress>()
 
   /** Calls observed on the service-level face, newest last. */
   readonly calls: {
-    method: 'create' | 'open' | 'openSubagent' | 'setSubagentCatalogOpen' | 'refreshSubagents'
+    method: 'create' | 'open' | 'openSubagent' | 'observeSubagent' | 'setSubagentCatalogOpen' | 'refreshSubagents'
       | 'clear' | 'refresh' | 'search' | 'fork'
     args: unknown[]
   }[] = []
@@ -347,6 +348,7 @@ export class TestSessions implements ISessions {
   async remove(id: string): Promise<void> {
     const record = this.require(id)
     this.records.delete(id as SessionId)
+    this.subagentAddresses.delete(id as SessionId)
     await this.stabilize(async () => {
       this.list.update((draft) => {
         draft.ids = draft.ids.filter(existing => existing !== id)
@@ -447,16 +449,27 @@ export class TestSessions implements ISessions {
   openSubagent(address: SubagentAddress): void {
     this.calls.push({ method: 'openSubagent', args: [address] })
     this.require(address.childSessionId)
+    this.subagentAddresses.set(address.childSessionId, address)
     this.list.update((draft) => {
       draft.current = address.childSessionId
       draft.currentAddress = address
     })
   }
 
+  /** Retain a child address and return its binding without changing selection. */
+  observeSubagent(address: SubagentAddress): Promise<SessionBinding> {
+    this.calls.push({ method: 'observeSubagent', args: [address] })
+    const binding = this.binding(address.childSessionId)
+    if (binding === undefined) {
+      throw new Error(`test sessions: unknown subagent ${address.childSessionId}`)
+    }
+    this.subagentAddresses.set(address.childSessionId, address)
+    return Promise.resolve(binding)
+  }
+
   /** Resolve the current fixture's retained catalog address. */
   subagentAddress(id: SessionId): SubagentAddress | undefined {
-    const address = this.list.getSnapshot().currentAddress
-    return address?.childSessionId === id ? address : undefined
+    return this.subagentAddresses.get(id)
   }
 
   /** Record catalog consumption; fixture callers drive snapshots explicitly. */

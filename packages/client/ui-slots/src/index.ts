@@ -185,6 +185,11 @@ export type SlotInjectOf<K extends keyof SlotMap & string> =
 /** Scope axis of a slot key's SlotMap entry. */
 export type ScopeOf<K extends keyof SlotMap & string> = SlotMap[K]['scope']
 
+/** Existing strict-Session slot keys eligible for fixed-binding rendering. */
+export type StrictSessionSlotKey = {
+  [K in keyof SlotMap & string]: ScopeOf<K> extends 'session' ? K : never
+}[keyof SlotMap & string]
+
 /**
  * Framework standard kit delivered to every session-scope slot component.
  * Declared empty here (zero-dependency layer): `ui-session` merges the
@@ -329,6 +334,27 @@ export interface SessionAreaProps {
  * session-scoped children receive this component without importing it.
  */
 export type SessionProviderComponent = (props: SessionAreaProps) => ReactNode
+
+/** Props for rendering one authorized slot against a non-selected Session. */
+export interface FixedSessionSlotViewProps<K extends StrictSessionSlotKey> {
+  /** Already materialized Session binding. */
+  readonly sessionId: string
+  /** Existing Session-scoped slot authorized by the registration. */
+  readonly slot: K
+  /** Owner values declared by that slot. */
+  readonly owner: OwnerOf<K>
+  /** Ordinary slot filtering and fallback options. */
+  readonly options?: RenderOpts<EntryKeyOf<K>>
+}
+
+/** Renderer-provided fixed-Session slot component narrowed to authorized keys. */
+export type FixedSessionSlotViewComponent<S extends StrictSessionSlotKey> =
+  <K extends S>(props: FixedSessionSlotViewProps<K>) => ReactNode
+
+/** Explicit component share for entries that reuse existing Session slots. */
+export interface PropsFixedSessionSlots<S extends StrictSessionSlotKey> {
+  readonly FixedSessionSlotView: FixedSessionSlotViewComponent<S>
+}
 
 /**
  * Child-slot render share: `renderSlot` statically narrowed to the entry's
@@ -570,6 +596,7 @@ type BaseOptions<
   H,
   M = never,
   N = undefined,
+  R extends readonly StrictSessionSlotKey[] | undefined = undefined,
 > = {
   /** Target slot key (the entry contributes INTO this slot). */
   name: K
@@ -584,6 +611,8 @@ type BaseOptions<
    * face — fails loud otherwise.
    */
   locale?: N
+  /** Existing Session slots this entry may render against a fixed binding. */
+  fixedSessionSlots?: R
   /** Registrant identity label for diagnostics (the runtime Service wrapper stamps the caller's fiber name). */
   registrant?: string
 } & KindOptions<K, EntryKey, M>
@@ -606,6 +635,8 @@ export interface StoredEntry {
   store?: StoreDecl | undefined
   /** Declared dictionary namespace (the render machinery synthesizes the `t` seat from it). */
   locale?: string | undefined
+  /** Existing Session slots authorized for fixed-binding rendering. */
+  fixedSessionSlots?: readonly string[] | undefined
   /** Diagnostics label of who registered. */
   registrant?: string | undefined
 }
@@ -638,6 +669,7 @@ interface ErasedOptions {
   children?: Record<string, SlotSpec<SlotEntryDef>> | undefined
   store?: StoreDecl | undefined
   locale?: string | undefined
+  fixedSessionSlots?: readonly string[] | undefined
   /* oxlint-disable-next-line typescript/no-explicit-any --
    * implementation-signature position only (both public overloads type inject
    * exactly); `never[]` would fail overload-to-implementation compatibility
@@ -784,14 +816,17 @@ export class SlotCore {
     H extends StoreDecl | undefined = undefined,
     M = never,
     N extends (keyof LocaleNamespaceMap & string) | undefined = undefined,
+    R extends readonly StrictSessionSlotKey[] | undefined = undefined,
     C extends SlotComponent<never> = SlotComponent<never>,
   >(
-    options: BaseOptions<K, EntryKey, D, H, M, N> & { inject?: undefined },
+    options: BaseOptions<K, EntryKey, D, H, M, N, R> & { inject?: undefined },
     component: C
       & SlotComponent<ComposedProps<
         K, NoInfer<EntryKey>, keyof NoInfer<D> & keyof SlotMap & string,
         HandleOf<NoInfer<H>>, object, NoInfer<M>, NoInfer<N>
-      >>
+      > & (NoInfer<R> extends readonly (infer S extends StrictSessionSlotKey)[]
+        ? PropsFixedSessionSlots<S>
+        : object)>
       & RendersCheck<C, D>,
   ): () => void
   /**
@@ -812,14 +847,17 @@ export class SlotCore {
     H extends StoreDecl | undefined = undefined,
     M = never,
     N extends (keyof LocaleNamespaceMap & string) | undefined = undefined,
+    R extends readonly StrictSessionSlotKey[] | undefined = undefined,
     C extends SlotComponent<never> = SlotComponent<never>,
   >(
-    options: BaseOptions<K, EntryKey, D, H, M, N> & { inject: (...args: InjectParams<K, H>) => I },
+    options: BaseOptions<K, EntryKey, D, H, M, N, R> & { inject: (...args: InjectParams<K, H>) => I },
     component: C
       & SlotComponent<ComposedProps<
         K, NoInfer<EntryKey>, keyof NoInfer<D> & keyof SlotMap & string,
         HandleOf<NoInfer<H>>, I, NoInfer<M>, NoInfer<N>
-      >>
+      > & (NoInfer<R> extends readonly (infer S extends StrictSessionSlotKey)[]
+        ? PropsFixedSessionSlots<S>
+        : object)>
       & RendersCheck<C, D>,
   ): () => void
   /* jscpd:ignore-end */
@@ -895,6 +933,7 @@ export class SlotCore {
       ...(options.children !== undefined ? { children: options.children } : {}),
       ...(options.store !== undefined ? { store: options.store } : {}),
       ...(options.locale !== undefined ? { locale: options.locale } : {}),
+      ...(options.fixedSessionSlots !== undefined ? { fixedSessionSlots: [...options.fixedSessionSlots] } : {}),
       ...(options.registrant !== undefined ? { registrant: options.registrant } : {}),
     }
     const next = [...rec.entries, entry]

@@ -50,19 +50,19 @@ describe('chat agent preset', () => {
     if (failures.length > 1) throw new AggregateError(failures, 'chat preset smoke teardown failed')
   })
 
-  it('sends only the chat persona and transcript to the model', () => {
+  it('sends the chat persona, transcript, and Standard file tools to the model', () => {
     const requestHeader = agentHandle.agent.session.requestHeader()
     if (requestHeader === undefined) throw new Error('the chat agent issued no model request')
     expect({
       prompt: systemPromptText(agentHandle.agent.session),
-      tools: requestHeader.tools,
+      tools: requestHeader.tools?.map(tool => tool.name),
       compaction: scaffold.ctx.agentPresets.serviceFor(agentHandle.agent, 'compaction'),
       runtimeContextMessages: agentHandle.agent.session.snapshotEvents().filter(event => event.type === 'user/message'
         && event.data.source.kind === 'plugin'
         && event.data.source.plugin === '@deepseek-ai/dsh-system-prompt').length,
     }).toEqual({
       prompt: CHAT_PROMPT,
-      tools: undefined,
+      tools: ['bash', 'edit', 'glob', 'grep', 'read', 'read_image', 'write'],
       compaction: undefined,
       runtimeContextMessages: 0,
     })

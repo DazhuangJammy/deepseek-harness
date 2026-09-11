@@ -49,6 +49,13 @@ const GATED: SelectOption = {
     confirmLabel: 'Enable Full access',
   },
 }
+const ACTIONABLE: SelectOption = {
+  id: 'expert',
+  label: 'Interview expert',
+  detail: 'v2',
+  detailPlacement: 'inline',
+  secondaryAction: { label: 'Edit Interview expert' },
+}
 
 const SEGMENT: TokenSegment = { via: 'enter', token: '/theme' }
 
@@ -157,6 +164,27 @@ describe('PopupSelectView', () => {
     expect(screen.getAllByRole('option')[2]!.getAttribute('aria-selected')).toBe('true')
     await act(async () => { fireEvent.click(options[2]!) })
     expect(seen).toEqual([OPTIONS[2]])
+    expect(view.container.childElementCount).toBe(0)
+  })
+
+  it('renders inline detail and routes the named secondary action without selecting the row', async () => {
+    const onSelect = vi.fn()
+    const onSecondaryAction = vi.fn()
+    const { view } = await mountOpen({
+      options: () => Promise.resolve([ACTIONABLE]),
+      onSelect,
+      onSecondaryAction,
+    })
+    const option = screen.getByRole('listitem')
+    const edit = screen.getByRole('button', { name: 'Edit Interview expert' })
+    expect(option.textContent).toContain('Interview expertv2')
+
+    await act(async () => {
+      fireEvent.click(edit)
+    })
+
+    expect(onSecondaryAction).toHaveBeenCalledExactlyOnceWith(ACTIONABLE, 'ctx-A')
+    expect(onSelect).not.toHaveBeenCalled()
     expect(view.container.childElementCount).toBe(0)
   })
 

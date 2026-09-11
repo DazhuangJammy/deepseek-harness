@@ -4,6 +4,8 @@ Status: implemented
 
 English | [中文](2026-08-21-tool-free-chat-preset.zh.md)
 
+The later [Chat file-capability decision](2026-09-11-chat-file-capabilities.md) supersedes only this decision's empty tool set. The complete conversational persona, unchanged transcript, and omissions of skills, project instructions, runtime context, and compaction remain in force.
+
 ## Problem
 
 The shipped presets all spend model context on coding capabilities. A user who only wants a conversation still receives project instructions, skill guidance, tool schemas, and runtime snapshots, increasing request size and latency without helping the answer.

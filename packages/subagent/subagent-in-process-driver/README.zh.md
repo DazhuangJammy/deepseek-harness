@@ -98,11 +98,11 @@ kind: "package-library"
 
 #### 模型看到什么
 
-共享驱动器把任务逐字作为子 agent 的用户消息发送；若有请求，还会在未发布子 agent 的全新作用域中遮蔽 persona，并限制全局工具 schema、查找、执行与 PTC mode SDK 绑定。父级限制不会被继承。工具指导插件可以使用组装 scope 省略不可用工具的指导；驱动器不会改写任意静态段落。spawn 不提供历史；fork 提供其已配平的初始内容。
+共享驱动器可以先记录并注入 `promptContext`，再把任务逐字作为子 agent 的用户消息发送。若有请求，它还会在未发布子 agent 的全新作用域中遮蔽 persona，并限制全局工具 schema、查找、执行与 PTC mode SDK 绑定。父级限制不会被继承。工具指导插件可以使用组装 scope 省略不可用工具的指导；驱动器不会改写任意静态段落。spawn 不提供历史；fork 提供其已配平的初始内容。
 
 #### Token 影响
 
-子 agent 输入与父级隔离，并随子 agent 自身的步骤增长。persona 会改变重复提示词文本；过滤会改变 schema 或生成 SDK 的成本，使用 scope 的指导内容也会随可见能力变化。
+子 agent 输入与父级隔离，并随子 agent 自身的步骤增长。提示词上下文会在任务之前一次性增加其完整内容。persona 会改变重复提示词文本；过滤会改变 schema 或生成 SDK 的成本，使用 scope 的指导内容也会随可见能力变化。
 
 #### KV Cache 影响
 

@@ -20,6 +20,20 @@ export type AgentPresetSettingsKey =
   | 'deleteTitle' | 'deleteDescription' | 'deleteConfirm' | 'deleting'
   | 'showPicker' | 'showPickerBeta' | 'showPickerDescription'
   | 'enablePickerToSetDefault' | 'enablePickerToCreate'
+  | 'expert.menu' | 'expert.menuHint' | 'expert.tabTitle' | 'expert.manage' | 'expert.manageHint'
+  | 'expert.create' | 'expert.createHint' | 'expert.edit' | 'expert.editHint' | 'expert.back'
+  | 'expert.name' | 'expert.namePlaceholder'
+  | 'expert.icon' | 'expert.icon.sparkles' | 'expert.icon.briefcase' | 'expert.icon.graduation-cap'
+  | 'expert.icon.code' | 'expert.icon.chart' | 'expert.welcome' | 'expert.welcomePlaceholder'
+  | 'expert.prompt' | 'expert.promptPlaceholder' | 'expert.save' | 'expert.saving'
+  | 'expert.history' | 'expert.version' | 'expert.noWelcome' | 'expert.empty' | 'expert.emptyHint'
+  | 'expert.viewVersion' | 'expert.versionReview' | 'expert.versionReviewHint' | 'expert.versionPrompt'
+  | 'expert.noPreviousVersion' | 'expert.backToEditor' | 'expert.loadingVersion' | 'expert.versionLoadFailed'
+  | 'expert.loading' | 'expert.optimize' | 'expert.optimizing' | 'expert.optimizingHint'
+  | 'expert.stopOptimization'
+  | 'expert.optimizeFailed' | 'expert.refinement' | 'expert.reviewTitle' | 'expert.noChangeTitle'
+  | 'expert.original' | 'expert.revised' | 'expert.changeReasons' | 'expert.dismiss'
+  | 'expert.accept' | 'expert.accepting'
 
 /** English copy. */
 export const en: Record<AgentPresetSettingsKey, string> = {
@@ -47,7 +61,8 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   presetCordisDescription:
     'Built for creating custom agent presets, with all Standard mode capabilities plus runtime inspection, plugin experiments, and preset-authoring guidance.',
   presetChatName: 'Chat mode',
-  presetChatDescription: 'General conversation with no tools, skills, project context, runtime context, or compaction.',
+  presetChatDescription:
+    'General conversation with Standard file tools and no skills, project context, runtime context, or compaction.',
   duplicate: 'Duplicate',
   duplicateUnavailable: 'This deployment has no writable preset directory',
   delete: 'Delete',
@@ -92,6 +107,58 @@ export const en: Record<AgentPresetSettingsKey, string> = {
     'When enabled, new tasks can choose Standard, PTC, Creator, Minimal, and custom modes. When disabled, all new tasks use the default mode (Standard by default; configurable). Only affects new tasks.',
   enablePickerToSetDefault: 'Turn on Agent mode selection to choose a default',
   enablePickerToCreate: 'Turn on Agent mode selection to start Creator mode',
+  'expert.menu': 'Experts',
+  'expert.menuHint': 'Choose or edit a conversation expert',
+  'expert.tabTitle': 'Expert prompt',
+  'expert.manage': 'Expert list',
+  'expert.manageHint': 'Conversation prompts with local, reviewable version history.',
+  'expert.create': 'Add expert',
+  'expert.createHint': 'Choose an optional icon, then add the welcome message and prompt.',
+  'expert.edit': 'Edit {name}',
+  'expert.editHint': 'Manual prompt edits create a new version only when the prompt changes.',
+  'expert.back': 'Back to experts',
+  'expert.name': 'Name',
+  'expert.namePlaceholder': 'Interview coach',
+  'expert.icon': 'Icon (optional)',
+  'expert.icon.sparkles': 'General expert',
+  'expert.icon.briefcase': 'Business expert',
+  'expert.icon.graduation-cap': 'Learning expert',
+  'expert.icon.code': 'Coding expert',
+  'expert.icon.chart': 'Analysis expert',
+  'expert.welcome': 'Welcome message',
+  'expert.welcomePlaceholder': 'Tell me the role and interview you are preparing for.',
+  'expert.prompt': 'Prompt',
+  'expert.promptPlaceholder': 'Write the expert instructions here.',
+  'expert.save': 'Save expert',
+  'expert.saving': 'Saving…',
+  'expert.history': 'Version history',
+  'expert.version': 'v{version}',
+  'expert.viewVersion': 'View v{version} prompt changes',
+  'expert.versionReview': 'v{version} prompt changes',
+  'expert.versionReviewHint': 'Read-only comparison with the preceding prompt version.',
+  'expert.versionPrompt': 'v{version} prompt',
+  'expert.noPreviousVersion': 'Before v1',
+  'expert.backToEditor': 'Back to expert editor',
+  'expert.loadingVersion': 'Loading version…',
+  'expert.versionLoadFailed': 'Could not load this version',
+  'expert.noWelcome': 'No welcome message',
+  'expert.empty': 'No experts yet',
+  'expert.emptyHint': 'Add one expert to start a focused conversation.',
+  'expert.loading': 'Loading experts…',
+  'expert.optimize': 'Optimize expert prompt',
+  'expert.optimizing': 'Optimizing prompt…',
+  'expert.optimizingHint': 'The refinement skill is checking the conversation evidence and will change only the supported local rule.',
+  'expert.stopOptimization': 'Stop prompt optimization',
+  'expert.optimizeFailed': 'Prompt optimization failed',
+  'expert.refinement': 'Prompt refinement',
+  'expert.reviewTitle': 'Review the proposed change',
+  'expert.noChangeTitle': 'No justified change',
+  'expert.original': 'Current prompt',
+  'expert.revised': 'Proposed prompt',
+  'expert.changeReasons': 'Why these lines changed',
+  'expert.dismiss': 'Keep current prompt',
+  'expert.accept': 'Accept new version',
+  'expert.accepting': 'Saving version…',
 }
 
 /** Simplified Chinese copy. */
@@ -114,7 +181,7 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   presetCordisName: '创造模式',
   presetCordisDescription: '用于创建自定义 Agent preset：具备标准模式的全部能力，并提供运行时检查、插件实验和 preset 创作指导。',
   presetChatName: '聊天模式',
-  presetChatDescription: '用于通用对话，不加载工具、Skills、项目上下文、运行时上下文或压缩。',
+  presetChatDescription: '用于通用对话，支持标准文件工具，不加载 Skills、项目上下文、运行时上下文或压缩。',
   duplicate: '复制',
   duplicateUnavailable: '此部署未配置可写的预设目录',
   delete: '删除',
@@ -155,6 +222,58 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   showPickerDescription: '开启后，新任务可选择标准、PTC、创造、极简及自定义模式；关闭后统一使用默认模式（默认为标准模式，可自定义）。仅影响新任务。',
   enablePickerToSetDefault: '请先开启 Agent 模式选择，再设置默认模式',
   enablePickerToCreate: '请先开启 Agent 模式选择，再启动创造模式',
+  'expert.menu': '专家',
+  'expert.menuHint': '选择或编辑一个对话专家',
+  'expert.tabTitle': '专家提示词',
+  'expert.manage': '专家列表',
+  'expert.manageHint': '每个专家都有独立提示词和可查看的本地版本记录。',
+  'expert.create': '新增专家',
+  'expert.createHint': '图标可选，然后填写欢迎语和提示词。',
+  'expert.edit': '编辑{name}',
+  'expert.editHint': '只有提示词发生变化时，手动保存才会新增版本。',
+  'expert.back': '返回专家列表',
+  'expert.name': '名字',
+  'expert.namePlaceholder': '面试模拟专家',
+  'expert.icon': '图标（可选）',
+  'expert.icon.sparkles': '通用专家',
+  'expert.icon.briefcase': '商务专家',
+  'expert.icon.graduation-cap': '学习专家',
+  'expert.icon.code': '编程专家',
+  'expert.icon.chart': '分析专家',
+  'expert.welcome': '欢迎语',
+  'expert.welcomePlaceholder': '告诉我你要准备的岗位和面试类型。',
+  'expert.prompt': '提示词',
+  'expert.promptPlaceholder': '在这里填写专家提示词。',
+  'expert.save': '保存专家',
+  'expert.saving': '正在保存…',
+  'expert.history': '版本记录',
+  'expert.version': 'v{version}',
+  'expert.viewVersion': '查看 v{version} 提示词修改',
+  'expert.versionReview': 'v{version} 提示词修改',
+  'expert.versionReviewHint': '只读查看该版本与上一版提示词的差异。',
+  'expert.versionPrompt': 'v{version} 提示词',
+  'expert.noPreviousVersion': 'v1 创建前',
+  'expert.backToEditor': '返回专家编辑页',
+  'expert.loadingVersion': '正在加载版本…',
+  'expert.versionLoadFailed': '无法加载该版本',
+  'expert.noWelcome': '暂未填写欢迎语',
+  'expert.empty': '还没有专家',
+  'expert.emptyHint': '先新增一个专家，再开始有针对性的聊天。',
+  'expert.loading': '正在加载专家…',
+  'expert.optimize': '优化专家提示词',
+  'expert.optimizing': '正在优化提示词…',
+  'expert.optimizingHint': '优化 skill 正在核对对话证据，只会修改有依据的局部规则。',
+  'expert.stopOptimization': '停止优化提示词',
+  'expert.optimizeFailed': '提示词优化失败',
+  'expert.refinement': '提示词优化',
+  'expert.reviewTitle': '检查建议修改',
+  'expert.noChangeTitle': '没有足够依据修改',
+  'expert.original': '当前提示词',
+  'expert.revised': '建议提示词',
+  'expert.changeReasons': '修改依据',
+  'expert.dismiss': '保留当前版本',
+  'expert.accept': '确认新版本',
+  'expert.accepting': '正在保存版本…',
 }
 
 // The resolution itself is the shared fold in `dsh-agent-presets/display`,

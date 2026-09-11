@@ -21,6 +21,9 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the settings shell's SlotMap merge (the 'settings.section' entry).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
+import type {} from '@deepseek-ai/dsh-client-ui-commands/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: pulls the Workspace UI navigation service merge (ctx.uiWorkspace).
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
@@ -35,6 +38,15 @@ import { AgentPresetSeatController } from './seat-store.ts'
 import { AgentPresetSectionController } from './section-store.ts'
 import { en, zh, type AgentPresetSettingsKey } from './locales.ts'
 import { AGENT_PRESET_SETTINGS_NS, AgentPresetSettingsController } from './settings-store.ts'
+import { ExpertUiController } from './expert-store.ts'
+import { ExpertPanel } from './ExpertPanel.tsx'
+import type { ExpertPanelInjected } from './ExpertPanel.tsx'
+import { ExpertWelcome } from './ExpertWelcome.tsx'
+import type { ExpertWelcomeInjected } from './ExpertWelcome.tsx'
+import { ExpertOptimizeAction } from './ExpertOptimizeAction.tsx'
+import type { ExpertOptimizeActionInjected } from './ExpertOptimizeAction.tsx'
+import { expertIcon } from './ExpertIcon.tsx'
+import { EXPERT_TAB_ID, EXPERT_TAB_KIND, expertTabDefinition } from './expert-tab.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -55,7 +67,8 @@ export { AGENT_PRESET_SETTINGS_NS, writeDefaultPreset } from './settings-store.t
 
 /** Required services (cordis fiber inject). */
 export const inject = [
-  'slots', 'locale', 'remote', 'remote.agentPresets', 'remote.settings',
+  'slots', 'locale', 'remote', 'remote.agentPresets', 'remote.settings', 'sessions',
+  'commandUi', 'sidebarRight', 'sidebarRightTabs',
 ]
 
 /**
@@ -71,8 +84,104 @@ export function apply(ctx: ClientContext): void {
     void controller.load()
     for (const read of rosterReaders) read()
   })
+  const experts = new ExpertUiController(ctx)
+  ctx.effect(() => ctx.remote.$on(
+    'expert/optimization-settled',
+    (sessionId, proposalId, outcome) => { experts.settleOptimization(sessionId, proposalId, outcome) },
+  ), 'ui-agent-preset: expert optimization settlements')
 
   ctx.effect(() => ctx.locale.register('settings.agentPreset', { zh, en }), 'ui-agent-preset: settings row dictionaries')
+
+  const scope = ctx
+  const t = scope.locale.bind('settings.agentPreset')
+  scope.effect(() => scope.sidebarRightTabs.register(expertTabDefinition(t)), 'ui-agent-preset: expert Sidebar type')
+  scope.effect(() => scope.slots.inject('sidebar.right.pane.tab', () => scope.slots.register({
+    name: 'sidebar.right.pane.tab',
+    key: EXPERT_TAB_ID,
+    locale: 'settings.agentPreset',
+    fixedSessionSlots: ['conversation.view'],
+    inject: (sessionId): ExpertPanelInjected => ({
+      hooks: { expertUi: experts.store },
+      load: () => experts.load(),
+      openList: () => { experts.openList(sessionId) },
+      beginCreate: () => { experts.beginCreate(sessionId) },
+      beginEdit: id => experts.beginEdit(sessionId, id),
+      openVersion: version => experts.openVersion(version),
+      closeVersion: () => { experts.closeVersion() },
+      patchDraft: (patch) => { experts.patchDraft(patch) },
+      patchOptimization: (prompt) => { experts.patchOptimization(sessionId, prompt) },
+      save: () => experts.save(sessionId),
+      accept: () => experts.accept(sessionId),
+      dismissOptimization: () => { experts.dismissOptimization(sessionId) },
+    }),
+  }, ExpertPanel)), 'ui-agent-preset: expert Sidebar body')
+
+  scope.effect(() => scope.commandUi.register({
+    name: 'experts',
+    label: () => t('expert.menu'),
+    description: () => t('expert.menuHint'),
+    icon: expertIcon(undefined),
+    available: () => true,
+    ui: {
+      kind: 'popupSelect',
+      async options(_session, signal) {
+        await experts.load()
+        if (signal.aborted) return []
+        return [
+          { id: 'manage', label: t('expert.manage'), detail: t('expert.manageHint') },
+          { id: 'create', label: t('expert.create'), detail: t('expert.createHint') },
+          ...experts.store.getSnapshot().experts.map(expert => ({
+            id: `select:${expert.id}`,
+            label: expert.name,
+            detail: t('expert.version', { version: expert.currentVersion }),
+            detailPlacement: 'inline' as const,
+            secondaryAction: { label: t('expert.edit', { name: expert.name }) },
+          })),
+        ]
+      },
+      async onSelect(option, session) {
+        if (option.id === 'create') {
+          experts.beginCreate(session.sessionId)
+          scope.sidebarRight.openTab(EXPERT_TAB_KIND)
+          return
+        }
+        if (option.id === 'manage') {
+          experts.openList(session.sessionId)
+          scope.sidebarRight.openTab(EXPERT_TAB_KIND)
+          return
+        }
+        if (!option.id.startsWith('select:')) return
+        const refusal = await experts.select(session.sessionId, option.id.slice('select:'.length))
+        if (refusal !== undefined) scope.sidebarRight.openTab(EXPERT_TAB_KIND)
+      },
+      async onSecondaryAction(option, session) {
+        if (!option.id.startsWith('select:')) return
+        await experts.beginEdit(session.sessionId, option.id.slice('select:'.length))
+        scope.sidebarRight.openTab(EXPERT_TAB_KIND)
+      },
+    },
+  }), 'ui-agent-preset: expert command menu')
+
+  scope.slots.inject('conversation.input.dock', () => scope.slots.register({
+    name: 'conversation.input.dock', id: 'expert-welcome', order: -20,
+    locale: 'settings.agentPreset',
+    inject: (): ExpertWelcomeInjected => ({
+      hooks: { expertUi: experts.store },
+      load: () => experts.load(),
+    }),
+  }, ExpertWelcome))
+
+  scope.slots.inject('conversation.chat.assistant-actions', () => scope.slots.register({
+    name: 'conversation.chat.assistant-actions', id: 'expert-optimize', order: 20,
+    locale: 'settings.agentPreset',
+    inject: (sessionId): ExpertOptimizeActionInjected => ({
+      hooks: { expertUi: experts.store },
+      optimize: (messageId) => {
+        scope.sidebarRight.openTab(EXPERT_TAB_KIND)
+        void experts.optimize(sessionId, messageId)
+      },
+    }),
+  }, ExpertOptimizeAction))
 
   ctx.effect(() => {
     // The roster is a live directory and the default is a settings field, so
@@ -90,6 +199,7 @@ export function apply(ctx: ClientContext): void {
       }),
       ctx.on('connection/reset', () => {
         refresh()
+        if (experts.store.getSnapshot().status !== 'idle') void experts.load()
         for (const read of rosterReaders) read()
       }),
     ]
@@ -120,8 +230,9 @@ export function apply(ctx: ClientContext): void {
     })
 
     const labelInjected = (): AgentPresetLabelInjected => ({
-      hooks: { agentPresets: controller.store },
+      hooks: { agentPresets: controller.store, expertUi: experts.store },
       load: () => controller.load(),
+      loadExperts: () => experts.load(),
     })
 
     scope.effect(() => {

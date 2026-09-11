@@ -141,3 +141,24 @@ export function ScopeProvider({
   const binding = observableHook(adapter.current)(value => value)
   return <ScopeBindingContext.Provider value={binding}>{children}</ScopeBindingContext.Provider>
 }
+
+/**
+ * Bind descendants to one already-materialized Session instead of the current selection.
+ * @param props - target Session identity and the subtree rendered against it.
+ * @returns the subtree under the resolved fixed Session binding.
+ */
+export function FixedSessionScopeProvider({
+  sessionId,
+  children,
+}: {
+  sessionId: string
+  children: ReactNode
+}) {
+  const host = useHost()
+  observableHook(host.scopeRevision)(value => value)
+  const adapter = host.scope('session')
+  if (adapter === undefined) throw new SlotAssemblyError("scope 'session' rendered without an installed adapter")
+  const binding = adapter.resolve(sessionId)
+  if (binding === undefined) throw new SlotAssemblyError(`session scope '${sessionId}' is unavailable`)
+  return <ScopeBindingContext.Provider value={binding}>{children}</ScopeBindingContext.Provider>
+}

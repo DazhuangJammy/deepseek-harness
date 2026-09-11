@@ -268,6 +268,34 @@ describe('Host Remote event routing', () => {
 })
 
 describe('subagent catalogs', () => {
+  it('retains a child address for observation without changing selection', async () => {
+    const api = new FakeApiClient()
+    api.onList = () => Promise.resolve(ok({ items: [
+      summary(S1),
+      summary(S2, { parentSessionId: S1, origin: 'subagent' }),
+    ] as never[] }))
+    api.onSubagentList = () => Promise.resolve(ok({
+      entries: [{
+        kind: 'child', id: S2, mode: 'one-shot', label: 'optimizer',
+        activity: 'running', hasChildren: false,
+      }] as never[],
+      parentAvailable: true,
+    }))
+    const manager = new SessionManager(fakeRemote(api))
+    await manager.refreshList()
+    manager.select(S1)
+    await manager.refreshSubagents(S1)
+
+    manager.observeSubagent({ parentSessionId: S1, childSessionId: S2, mode: 'one-shot' })
+
+    expect(manager.getListSnapshot().current).toBe(S1)
+    expect(manager.getListSnapshot().currentAddress).toBeUndefined()
+    expect(manager.get(S2).getSnapshot().subagent).toEqual({
+      address: { parentSessionId: S1, childSessionId: S2, mode: 'one-shot' },
+      parentAvailable: true,
+    })
+  })
+
   it('keeps a catalog-discovered child address across ordinary selection and status frames', async () => {
     const api = new FakeApiClient()
     api.onList = () => Promise.resolve(ok({ items: [

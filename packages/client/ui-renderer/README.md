@@ -33,7 +33,7 @@ This package is infrastructure: the web shell and the boot kernel are its only d
 
 ### For business plugins
 
-A business plugin registers a component through the slot system; the renderer binds the runtime's session and workspace observable sources into selector hooks at the outlet. The plugin receives the standard session props (session id, conversation snapshot hooks) through its composed props — it never imports the renderer or touches React internals.
+A business plugin registers a component through the slot system; the renderer binds the runtime's session and workspace observable sources into selector hooks at the outlet. The plugin receives the standard session props (session id, conversation snapshot hooks) through its composed props — it never imports the renderer or touches React internals. An entry can list existing Session slots under `fixedSessionSlots`; the renderer then injects `FixedSessionSlotView`, narrowed to those keys, so an embedded view can reuse one against an already materialized, non-selected Session binding without changing application selection.
 
 -----
 
@@ -51,7 +51,7 @@ The plugin activates after `slots`, `sessions`, and `layout`; it installs `creat
 
 ### Slot bindings
 
-`createSlotRenderer` connects the slot registry to React: entry lists become reactive sources, and each outlet renders through the installed renderer. Business plugins pass bare observable sources through typed slot `hooks`; the renderer binds them at the outlet via the uSES adapter.
+`createSlotRenderer` connects the slot registry to React: entry lists become reactive sources, and each outlet renders through the installed renderer. Business plugins pass bare observable sources through typed slot `hooks`; the renderer binds them at the outlet via the uSES adapter. The injected `FixedSessionSlotView` checks the entry's allowlist and installs a fixed binding around the same outlet machinery, so embedded views reuse the registered component and its ordinary injections without importing renderer code.
 
 ### Identity
 

@@ -36,6 +36,8 @@ export interface PopupSpec<TCtx> {
   options(context: TCtx, signal: AbortSignal): Promise<readonly SelectOption[]>
   /** Settle the picked option against the open-time context. */
   onSelect(option: SelectOption, context: TCtx): void | Promise<void>
+  /** Settle one option's independently named secondary action. */
+  onSecondaryAction?(option: SelectOption, context: TCtx): void | Promise<void>
 }
 
 /** Injected session-wiring callbacks of one controller (tests pass fakes). */
@@ -221,7 +223,21 @@ export class PopupSelectController<TCtx = unknown> {
       this.state.set({ ...s, confirming: option, acknowledged: false, error: null })
       return
     }
-    await this.settle(binding, option)
+    await this.settle(binding, option, 'primary')
+  }
+
+  /**
+   * Run one filtered row's secondary action through the same single-flight settlement.
+   * @param index - filtered-row index.
+   * @returns settled when the action closes the shell or surfaces its failure.
+   */
+  async selectSecondary(index: number): Promise<void> {
+    const binding = this.binding
+    const s = this.state.getSnapshot()
+    if (binding === null || !s.open || s.status !== 'ready' || s.submitting || s.confirming !== null) return
+    const option = filterOptions(s.options, s.search)[index]
+    if (option?.secondaryAction === undefined || binding.spec.onSecondaryAction === undefined) return
+    await this.settle(binding, option, 'secondary')
   }
 
   /**
@@ -246,16 +262,21 @@ export class PopupSelectController<TCtx = unknown> {
     const binding = this.binding
     const s = this.state.getSnapshot()
     if (binding === null || !s.open || s.submitting || s.confirming === null || !s.acknowledged) return
-    await this.settle(binding, s.confirming)
+    await this.settle(binding, s.confirming, 'primary')
   }
 
   /** Run the business settlement for an already admitted option. */
-  private async settle(binding: OpenBinding<TCtx>, option: SelectOption): Promise<void> {
+  private async settle(
+    binding: OpenBinding<TCtx>,
+    option: SelectOption,
+    action: 'primary' | 'secondary',
+  ): Promise<void> {
     const s = this.state.getSnapshot()
     if (this.binding !== binding || !s.open || s.submitting) return
     this.state.set({ ...s, submitting: true, confirming: null, acknowledged: false, error: null })
     try {
-      await binding.spec.onSelect(option, binding.context)
+      if (action === 'primary') await binding.spec.onSelect(option, binding.context)
+      else await binding.spec.onSecondaryAction?.(option, binding.context)
     } catch (error) {
       console.error(`[ui-commands] popupSelect onSelect failed for /${binding.command}:`, error)
       if (this.binding !== binding) return // dismissed/reopened/disposed while onSelect flew

@@ -4,6 +4,8 @@ Status: implemented
 
 [English](2026-08-21-tool-free-chat-preset.md) | 中文
 
+后续的[聊天文件能力决策](2026-09-11-chat-file-capabilities.zh.md)仅取代本决策中的空工具集。完整对话 persona、不变的 transcript，以及不加载 skill、项目指令、运行时上下文与压缩的约束继续有效。
+
 ## 问题
 
 随附的 preset 都会把模型上下文用在编码能力上。用户只想聊天时，模型仍会收到项目指令、skill 指引、工具 schema 和运行时快照；这些内容会增加请求大小与延迟，却不能改善回答。

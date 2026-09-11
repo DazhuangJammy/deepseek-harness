@@ -29,7 +29,7 @@ Compose UI through this package whenever you write a client plugin: register a c
 
 ### The four props shares
 
-Every registered component receives props composed from four shares: the runtime share (`owner` from the parent's renderSlot call site, plus the session standard kit and global seat), the child-render share (`renderSlot` statically narrowed to the declared children keys), the store share (the declared handle's selector hook and draft-stripped actions), and the business share (inferred from the `inject` factory's return). Components reference `ComposedProps`; they never re-type a share locally.
+Every registered component receives props composed from four shares: the runtime share (`owner` from the parent's renderSlot call site, plus the session standard kit and global seat), the child-render share (`renderSlot` statically narrowed to the declared children keys), the store share (the declared handle's selector hook and draft-stripped actions), and the business share (inferred from the `inject` factory's return). Components reference `ComposedProps`; they never re-type a share locally. An entry that must embed an existing Session slot can additionally list exact keys in `fixedSessionSlots` and consume `PropsFixedSessionSlots`; the renderer then supplies a fixed-binding view narrowed to that allowlist without granting declaration ownership.
 
 ### Store seats
 
@@ -37,7 +37,7 @@ A register call may declare a store seat with `store: defineStore(...)`: `init` 
 
 ### Declaration discipline
 
-Declaring a slot is claiming it: the registering entry becomes the only entry allowed to render that key, and registering into an undeclared slot, declaring an already-declared child, mounting one shared handle under two scopes, or registering a chain without `select` throws at load. An entry's disposer collapses its declared child slots recursively — ledger rows, contributions, and store mounts die on one lifecycle axis.
+Declaring a slot is claiming it: the registering entry becomes the only entry allowed to render that key, and registering into an undeclared slot, declaring an already-declared child, mounting one shared handle under two scopes, or registering a chain without `select` throws at load. `fixedSessionSlots` is a separate, read-only reuse authority for an existing Session slot; the renderer rejects any key outside that registration's list. An entry's disposer collapses its declared child slots recursively — ledger rows, contributions, and store mounts die on one lifecycle axis.
 
 -----
 

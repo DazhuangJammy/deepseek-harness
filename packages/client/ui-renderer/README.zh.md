@@ -33,7 +33,7 @@ kind: "package-reference"
 
 ### 对业务插件
 
-业务插件通过 slot 系统注册组件；渲染器在 outlet 处把运行时的会话与 Workspace observable source 绑定为 selector 钩子。插件通过其组合 props 收到标准会话 props（session id、对话快照钩子）——它绝不导入渲染器，也不触碰 React 内部机制。
+业务插件通过 slot 系统注册组件；渲染器在 outlet 处把运行时的会话与 Workspace observable source 绑定为 selector 钩子。插件通过其组合 props 收到标准会话 props（session id、对话快照钩子）——它绝不导入渲染器，也不触碰 React 内部机制。entry 可以在 `fixedSessionSlots` 下列出既有 Session slot；renderer 随后注入缩窄到这些 key 的 `FixedSessionSlotView`，让嵌入视图在不改变应用当前选择的情况下，用一个已经物化、未被选中的 Session binding 复用该 slot。
 
 -----
 
@@ -51,7 +51,7 @@ kind: "package-reference"
 
 ### Slot 绑定
 
-`createSlotRenderer` 把 slot 注册表连接到 React：条目列表成为响应式 source，每个 outlet 经已安装的渲染器渲染。业务插件通过带类型的 slot `hooks` 传递裸 observable source；渲染器经 uSES 适配器在 outlet 处完成绑定。
+`createSlotRenderer` 把 slot 注册表连接到 React：条目列表成为响应式 source，每个 outlet 经已安装的渲染器渲染。业务插件通过带类型的 slot `hooks` 传递裸 observable source；渲染器经 uSES 适配器在 outlet 处完成绑定。注入的 `FixedSessionSlotView` 会校验 entry 的 allowlist，并在同一套 outlet 机制外安装固定 binding，让嵌入视图复用已注册组件及其普通注入，而不导入 renderer 代码。
 
 ### 身份
 

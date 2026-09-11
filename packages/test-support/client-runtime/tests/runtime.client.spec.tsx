@@ -191,6 +191,29 @@ describe('sessions', () => {
     await runtime.dispose()
   })
 
+  it('observes a child without selecting it and forgets its address on removal', async () => {
+    const runtime = await runtimeWithFrame()
+    await runtime.sessions.add({ id: 'parent' })
+    await runtime.sessions.add({ id: 'child' }, { current: false })
+    const address = {
+      parentSessionId: 'parent' as SessionId,
+      childSessionId: 'child' as SessionId,
+      mode: 'one-shot' as const,
+    }
+
+    const binding = await runtime.sessions.observeSubagent(address)
+    expect(binding.sessionId).toBe('child')
+    expect(runtime.sessions.list.getSnapshot().current).toBe('parent')
+    expect(runtime.sessions.subagentAddress('child' as SessionId)).toEqual(address)
+    expect(() => runtime.sessions.observeSubagent({
+      ...address, childSessionId: 'missing' as SessionId,
+    })).toThrow(/unknown subagent missing/)
+
+    await runtime.sessions.remove('child')
+    expect(runtime.sessions.subagentAddress('child' as SessionId)).toBeUndefined()
+    await runtime.dispose()
+  })
+
   it('answers search with an empty page until a scenario declares hits, recording every call', async () => {
     const runtime = await runtimeWithFrame()
     await runtime.sessions.add({ id: 's1' })

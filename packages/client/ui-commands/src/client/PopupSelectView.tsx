@@ -12,7 +12,9 @@
 import { useEffect, useRef } from 'react'
 import { useSyncExternalStore } from 'react'
 import clsx from 'clsx'
-import { IconCheckOutline16, RiskConfirmation, useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
+import {
+  IconCheckOutline16, IconEditOutline16, RiskConfirmation, Tooltip, useAnchoredMaxHeight,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { filterOptions } from './popup.ts'
 import type { PopupSelectController } from './popup.ts'
@@ -51,7 +53,7 @@ export function PopupSelectView({ popup, t }: PopupSelectViewProps) {
   // the browser never scrolls the active row into view — do it here.
   useEffect(() => {
     if (active === null) return
-    cardRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' })
+    cardRef.current?.querySelector('[aria-selected="true"], [aria-current="true"]')?.scrollIntoView({ block: 'nearest' })
   }, [active])
 
   // Focus ownership: the search input grabs on open, and ANY outside
@@ -77,6 +79,7 @@ export function PopupSelectView({ popup, t }: PopupSelectViewProps) {
   if (!state.open) return null
 
   const rows = filterOptions(state.options, state.search)
+  const hasSecondaryActions = rows.some(option => option.secondaryAction !== undefined)
   const confirmation = state.confirming?.confirmation
 
   const onKeyDown = (ev: React.KeyboardEvent<HTMLDivElement>): void => {
@@ -135,24 +138,65 @@ export function PopupSelectView({ popup, t }: PopupSelectViewProps) {
           {state.submitting && <div className={css.status}>{t('status.applying')}</div>}
           {state.status === 'ready' && rows.length === 0 && <div className={css.status}>{t('status.empty')}</div>}
           {state.status === 'ready' && (
-            <div role="listbox" aria-label={t('listbox.aria', { command: String(state.command) })} className={css.viewport}>
-              {rows.map((option, index) => (
-                <div
-                  key={option.id}
-                  role="option"
-                  aria-selected={index === state.active}
-                  className={clsx(css.row, index === state.active && css.rowActive)}
-                  // mousedown would race the document capture listener; the shell
-                  // owns focus anyway, so a plain click (inside the card → no
-                  // dismiss) works.
-                  onClick={() => { void popup.select(index) }}
-                  onMouseEnter={() => { popup.highlight(index) }}
-                >
-                  <span className={css.label}>{option.label}</span>
-                  {option.detail !== undefined && <span className={css.detail}>{option.detail}</span>}
-                  {option.active === true && <span className={css.check}><IconCheckOutline16 /></span>}
-                </div>
-              ))}
+            <div
+              role={hasSecondaryActions ? 'list' : 'listbox'}
+              aria-label={t('listbox.aria', { command: String(state.command) })}
+              className={css.viewport}
+            >
+              {rows.map((option, index) => {
+                const activeRow = index === state.active
+                const rowClass = clsx(
+                  css.row,
+                  activeRow && css.rowActive,
+                  option.detailPlacement === 'inline' && css.rowInlineDetail,
+                )
+                const content = (
+                  <>
+                    <span className={css.label}>{option.label}</span>
+                    {option.detail !== undefined && <span className={css.detail}>{option.detail}</span>}
+                    {option.active === true && <span className={css.check}><IconCheckOutline16 /></span>}
+                  </>
+                )
+                if (!hasSecondaryActions) {
+                  return (
+                    <div
+                      key={option.id}
+                      role="option"
+                      aria-selected={activeRow}
+                      className={rowClass}
+                      onClick={() => { void popup.select(index) }}
+                      onMouseEnter={() => { popup.highlight(index) }}
+                    >
+                      {content}
+                    </div>
+                  )
+                }
+                return (
+                  <div
+                    key={option.id}
+                    role="listitem"
+                    aria-current={activeRow}
+                    className={rowClass}
+                    onMouseEnter={() => { popup.highlight(index) }}
+                  >
+                    <button type="button" className={css.primaryAction} onClick={() => { void popup.select(index) }}>
+                      {content}
+                    </button>
+                    {option.secondaryAction !== undefined && (
+                      <Tooltip label={option.secondaryAction.label} side="bottom">
+                        <button
+                          type="button"
+                          className={css.secondaryAction}
+                          aria-label={option.secondaryAction.label}
+                          onClick={() => { void popup.selectSecondary(index) }}
+                        >
+                          <IconEditOutline16 size={14} />
+                        </button>
+                      </Tooltip>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

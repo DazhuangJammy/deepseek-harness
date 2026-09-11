@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
-import { resolveChildAgentOptions } from '../src/child-agent.ts'
+import { applyChildComposition, resolveChildAgentOptions } from '../src/child-agent.ts'
 
 function parentAgent(): Agent {
   const id = SessionId('parent')
@@ -72,5 +73,13 @@ describe('child Agent options', () => {
       maxTokens: 512,
       subagentDepth: 1,
     })
+  })
+
+  it('rejects an explicit preset when the preset service is unavailable', async () => {
+    const childCtx = new Context()
+    const parent = { ...parentAgent(), ctx: new Context() } as Agent
+
+    await expect(applyChildComposition(childCtx, parent, { agentPreset: 'standard' }))
+      .rejects.toThrow('explicit child Agent preset requires the agent-presets service')
   })
 })

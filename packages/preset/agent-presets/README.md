@@ -27,7 +27,7 @@ Use `dsh-agent-presets` to give each session the tools, prompt sections, and ski
 
 Mount this package in a composition that should give each agent session its own tools, prompt sections, and skills from a preset file. Every session names a preset — explicitly or through the configured default — and is composed from it; without the package, sessions fall back to whatever the host composition mounts.
 
-The shipped Web `standard`, `ptc`, and `cordis` presets include [explicit file delivery](../../client/ui-deliverables/README.md#explicit-deliveries). The `minimal` preset keeps its fixed two-tool training configuration.
+The shipped Web `standard`, `ptc`, `cordis`, and `chat` presets include the same shell and filesystem capabilities for reading uploaded files. `standard`, `ptc`, and `cordis` also include [explicit file delivery](../../client/ui-deliverables/README.md#explicit-deliveries). The `minimal` preset keeps its fixed training configuration.
 
 ### What a preset gives a session
 
@@ -54,6 +54,7 @@ The plugin needs a `default` preset id and scans `roots` for presets:
 | `roots` | `[]` | Scanned directories in precedence order; each supplies `path` (a leading `~` expands) and `trust` (defaults to `user`) |
 | `includeShippedRoot` | `true` | Prepend the package's bundled presets as a `system` root before every configured root |
 | `includeUserRoot` | `true` | Append `<dshHome>/.agent-presets` as a `user` root, after every configured root |
+| `experts` | see generated catalog | Limits for expert names, welcome messages, prompt bytes, evidence messages, optimization input/output, and the refinement deadline |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-agent-presets) is the exhaustive source for every accepted field and its JSDoc.
 
@@ -76,6 +77,12 @@ A client shows or hides selection by writing only `modeSelectionEnabled`; the [W
 Authoring is copy-only: creating a preset copies an existing preset's whole directory — composition, display metadata, skill directories, assets — into the first `user` root. The copy keeps the source's description but gets its own id and an optional display name, so no caller supplies composition text and a copy grants nothing the roster did not already carry. After creation, everything happens in the preset's own files.
 
 A copy is refused when the id is not `[a-z0-9][a-z0-9-]*` (the id becomes a directory name), when the id is already taken (a copy never overwrites), or when the source is unknown. Deleting removes only locally authored presets; presets that ship with the deployment are not removable. A session already running on a deleted preset keeps running on it.
+
+### Authoring and refining experts
+
+An expert uses a managed Chat-mode preset composition with `expert.json`, an author-written welcome message, and immutable prompt files under `versions/`. Experts are absent from the Agent-mode roster and are listed only through the expert endpoints. Their managed composition carries the same shell and filesystem tools as `chat`; mounting also restores that composition for experts created by an earlier release. Creating an expert writes version 1. A manual prompt edit or accepted refinement appends the next numbered prompt and JSON change record, then atomically advances `expert.json`; metadata-only edits keep the current version. Saving a prompt from an open expert Session also selects that version for its subsequent requests, while other open Sessions keep their installed versions. New Sessions and ordinary branches use the current expert version; a branch retains the selected conversation prefix and records a prompt update before its next request when that prefix used an older version. Every write supplies the version it read and fails on a conflict instead of overwriting a newer editor. A version read returns that prompt and its immediate predecessor so clients can render a lazy, read-only comparison without loading every historical prompt.
+
+Prompt refinement starts a one-shot child Agent with the `standard` preset and the current Session's selected model route, then shadows its persona with Chinese optimization instructions. A compact Chinese first user message explicitly invokes the bundled `expert-prompt-refiner` skill; a preceding plugin-sourced `promptContext` carries the expert prompt plus recent human/assistant evidence ending at the selected answer. The child Session records both inputs with the normal Agent, skill, and model events. The Chinese skill requires an explicit correction and a later improved result, preserves unrelated prompt text, and calls the existing `structured_output` tool once with the complete candidate plus Chinese summary and reasons. The Host derives exact replacement text from the original and candidate prompts, then holds the candidate without changing expert files. Acceptance commits the user-reviewed prompt, appends a version, and selects that prompt for the current Session's later turns. A durable prompt-application event restores manually saved, accepted, or branch-selected versions without rewriting the system prompt attached to earlier answers; the next model request records the existing system-prompt update node when the text changed.
 
 ### Switching a session's preset
 
@@ -112,6 +119,9 @@ This section explains the design behind the roster and the standing mount; obser
 | [`src/preset.ts`](src/preset.ts) | Vocabulary: preset id rule, `AgentPreset` and `PresetRoot`, error types |
 | [`src/mount.ts`](src/mount.ts) | Subtree mounting, host base-URL handling, mount audit, `write()` suppression |
 | [`src/authoring.ts`](src/authoring.ts) | Copy/delete/read of locally authored presets, permission tightening |
+| [`src/expert.ts`](src/expert.ts) | Expert metadata, immutable prompt versions, guarded create/update |
+| [`src/expert-optimizer.ts`](src/expert-optimizer.ts) | Evidence selection, bundled skill request, output validation |
+| [`src/expert-session.ts`](src/expert-session.ts) | Bounded evidence and applied expert-prompt Session projection |
 | [`src/metadata.ts`](src/metadata.ts) | `preset.yml` display metadata |
 | [`src/session.ts`](src/session.ts) | `agent-preset/selected` event and the `agentPreset` Session projection |
 | [`src/types.ts`](src/types.ts) | Client-safe wire payloads and cordis event declaration |
@@ -158,11 +168,11 @@ Read these pages when the package-level contract is not enough; they move from t
 <a id="model-experience"></a>
 ## Model Experience
 
-Indirectly, through the plugins a preset's standing composition installs, which own every tool schema, prompt section, and skill the preset makes visible to the agents joined to it.
+Indirectly, through the plugins a preset's standing composition installs, which own every tool schema, prompt section, and skill the preset makes visible to the agents joined to it. Expert refinement additionally runs a separate `standard` child Agent on the current Session's selected model route; the child Session records its explicit skill invocation and model work, while its candidate does not enter the parent conversation history.
 
 #### KV Cache effect
 
-Prefix-stable for the life of an agent: a composition is installed once, before the agent is published and therefore before its first request, and is never re-read while the agent runs. Choosing a different preset for a new session establishes a different prefix for that session alone and cannot invalidate reuse for any session already running.
+Prefix-stable until an expert prompt version is applied. Ordinary preset files are installed before the agent is published and are not re-read while it runs. Saving or accepting a new version replaces only the addressed Session's complete prompt for later turns, while a branch applies the expert version current at branch creation. Each replacement restarts cache reuse from the new prefix; other open Sessions keep their installed prompt.
 
 ## Known Limitations and Deferred Work
 
@@ -173,6 +183,7 @@ These limits define when the roster is a poor fit or needs special operational c
 
 - **A preset outside the writable root is discoverable but not deletable** — `remove()` refuses anything that does not live under the first `user` root, so a deployment that configures its own writable root while leaving `includeUserRoot` on lists the harness-home presets, mounts them, and answers "it does not live under the writable preset root" for every delete. A deployment that wants only its own presets sets `includeUserRoot: false`.
 - **A session cannot change preset once it has produced anything** — switching re-links a blank session's parent scope to another standing mount, and only a blank one: swapping tools mid-conversation would strand tools the model has called.
+- **Only the current expert version accepts a write** — an editor or old Session whose base version is stale receives a version conflict and must reload; the service never merges prompt text automatically.
 - **A generation is keyed on the composition file alone** — the stamp check notices `agent.cordis.yml` changing, not an edit to a skill file or asset beside it; those reach new sessions only once the composition file itself moves or the process restarts.
 - **A superseded generation is never reclaimed** — sessions already joined keep the generation they run on, and the roster holds no join count that could tell when the last one left, so the whole subtree stays mounted until the process ends. The cost is per generation rather than per session, but it is not free: `dsh-skill-filesystem` watches its roots by default, so each edit-then-create cycle adds a live watcher set.
 - **A copy is never mounted to validate** — it is byte-identical to its source, so a source broken on disk yields a copy exactly as broken as the source; discovery's health check marks both rows on the next roster read rather than deferring the failure to a session start.

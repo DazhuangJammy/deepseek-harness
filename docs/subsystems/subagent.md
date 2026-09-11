@@ -28,6 +28,10 @@ A provider advertises its **start-time** features on a static descriptor the ser
  */
 interface SubagentCapabilities {
   readonly agentOptions: boolean
+  /** Whether a one-shot child may select an Agent preset instead of inheriting its parent. */
+  readonly agentPreset?: boolean
+  /** Whether a one-shot child may receive logged context before its ordinary prompt. */
+  readonly promptContext?: boolean
   readonly outputSchema: boolean
   readonly depthLimit: boolean
   readonly toolFilter: boolean
@@ -37,7 +41,7 @@ interface SubagentCapabilities {
 
 ## The one-shot start request
 
-The tool layer builds this request from the model input and its own config; the service validates it against the named provider before `start`. Required `parent` supplies the session cwd, lineage, and delegation depth. Optional Agent provider, model, reasoning-effort, and token overrides, output schema, depth, tool filter, and persona require matching capability flags. In-process backends merge `agentOptions` over the parent Agent's options, scope filters and personas to child creation, and implement the supported object-rooted schema with a forced capture tool. The DSH SDK backend merges the four Agent route fields over its instance defaults and validates them in the child runtime's initialization; ACP, Codex, and Claude Code reject `agentOptions` before starting their transports.
+The tool layer builds this request from the model input and its own config; the service validates it against the named provider before `start`. Required `parent` supplies the session cwd, lineage, and delegation depth. Optional Agent provider, model, reasoning-effort, token, preset, prompt context, output schema, depth, tool filter, and persona values require matching capability flags. In-process backends merge `agentOptions` over the parent Agent's options, claim `promptContext` before the ordinary prompt, scope filters and personas to child creation, and implement the supported object-rooted schema with a forced capture tool. The spawn backend can mount an explicit `agentPreset` instead of inheriting the parent's live composition. The DSH SDK backend merges the four Agent route fields over its instance defaults and validates them in the child runtime's initialization; ACP, Codex, and Claude Code reject unsupported options before starting their transports.
 
 ```ts type-equiv
 /**
@@ -52,6 +56,12 @@ interface SubagentStartRequest {
   readonly label?: string
   /** Content delivered as the child's user message. */
   readonly prompt: ContentBlock[]
+  /**
+   * Optional non-waking context claimed before the ordinary prompt. Providers
+   * that support it must log the supplied source and content in the child's
+   * first step so model input and transcript presentation share one record.
+   */
+  readonly promptContext?: UserMessage
   /**
    * The spawning agent. In-process providers derive workspace, lineage, and
    * delegation depth from its durable session state. ACP reads only its cwd,
@@ -74,6 +84,11 @@ interface SubagentStartRequest {
    * before initializing the separate child runtime.
    */
   readonly agentOptions?: AgentOptions
+  /**
+   * Optional Agent preset for a fresh in-process child. Providers that support
+   * this capability compose the named preset instead of inheriting the parent.
+   */
+  readonly agentPreset?: string
   /**
    * Object-rooted JSON Schema within `assertObjectJsonSchema`'s enforced subset. Start rejects
    * unsupported schemas or providers without the capability. Data must be plain host-realm JSON;

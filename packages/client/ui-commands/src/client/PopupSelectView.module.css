@@ -62,12 +62,75 @@
   text-overflow: ellipsis;
 }
 
+.rowInlineDetail .label {
+  flex: 0 1 auto;
+}
+
+.primaryAction {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rowInlineDetail .primaryAction {
+  flex: 0 1 auto;
+}
+
 .detail {
   font-size: 12px;
   color: var(--dsw-alias-label-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.rowInlineDetail .detail {
+  flex: none;
+}
+
+.secondaryAction {
+  display: inline-grid;
+  flex: none;
+  margin-left: auto;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+}
+
+.row:hover .secondaryAction,
+.row:focus-within .secondaryAction {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.secondaryAction:hover,
+.secondaryAction:focus-visible {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+@media (hover: none) {
+  .secondaryAction {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .check {

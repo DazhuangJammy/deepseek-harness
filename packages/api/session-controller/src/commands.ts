@@ -256,6 +256,7 @@ export class SessionCommandController {
     }
     const childId = brandString<SessionId>(`session-${randomUUID()}`)
     const composition = await this.agents.composeAgent(this.agents.presetForObservation(source))
+    const setup = composition.setup
     try {
       const { provider, model } = this.ctx.agentDefaultModel.currentSelection()
       await this.ctx.agents.create({
@@ -271,7 +272,10 @@ export class SessionCommandController {
             : { agentPreset: composition.agentPreset }),
         },
         agentOptions: { provider, model },
-        setup: composition.setup,
+        setup: async (agentCtx, agent) => {
+          await setup(agentCtx, agent)
+          await this.ctx.get('agentPresets')?.applyLatestExpertPromptForBranch(agent)
+        },
       })
     } catch (error) {
       throw new RemoteError(

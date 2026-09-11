@@ -88,6 +88,28 @@ const remote = (ctx: Context) => createSessionTestRemote(ctx, {
 })
 
 describe('sessions.fork', () => {
+  it('refreshes a seeded expert after its preset is mounted and before publication', async () => {
+    const ctx = await composed()
+    const order: string[] = []
+    const applyLatestExpertPromptForBranch = vi.fn(() => {
+      order.push('latest')
+      return Promise.resolve(true)
+    })
+    ctx.provide('agentPresets', {
+      resolve: () => Promise.resolve({ id: 'expert' }),
+      mount: () => { order.push('mount') },
+      applyLatestExpertPromptForBranch,
+    } as never)
+    const source = liveAgent(ctx, 'session-expert-source', 1)
+
+    const response = await remote(ctx).fork(request({ sessionId: source.id }))
+
+    expect(response.ok).toBe(true)
+    expect(order).toEqual(['mount', 'latest'])
+    expect(applyLatestExpertPromptForBranch).toHaveBeenCalledOnce()
+    await ctx.fiber.dispose()
+  })
+
   it('cuts at the anchored completed turn and records lineage and cwd', async () => {
     const ctx = await composed()
     const source = liveAgent(ctx, 'session-source', 2)

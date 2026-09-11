@@ -802,6 +802,36 @@ describe('binding and stage lifecycle', () => {
 })
 
 describe('catalog-addressed navigation', () => {
+  it('opens an embedded child event window without changing the main selection', async () => {
+    const b = bench()
+    b.api.onSubagentList = () => Promise.resolve(ok({
+      entries: [{
+        kind: 'child', id: sid('optimizer'), mode: 'one-shot', label: 'Prompt optimizer',
+        activity: 'running', hasChildren: false,
+      }] as never[],
+      parentAvailable: true,
+    }))
+    await feedList(b, [{ id: 'main' }])
+    b.svc.open(sid('main'))
+    await vi.waitFor(() => { expect(b.api.followStarts.map(String)).toContain('main') })
+
+    const binding = await b.svc.observeSubagent({
+      parentSessionId: sid('main'), childSessionId: sid('optimizer'), mode: 'one-shot',
+    })
+
+    expect(binding.sessionId).toBe(sid('optimizer'))
+    expect(binding.session.getSnapshot().openState).toBe('open')
+    expect(b.svc.list.getSnapshot().current).toBe(sid('main'))
+    expect(b.svc.subagentAddress(sid('optimizer'))).toEqual({
+      parentSessionId: sid('main'), childSessionId: sid('optimizer'), mode: 'one-shot',
+    })
+    expect(b.api.callsOf('session.follow')).toContainEqual(expect.objectContaining({
+      address: {
+        kind: 'subagent', parentSessionId: sid('main'), childSessionId: sid('optimizer'), mode: 'one-shot',
+      },
+    }))
+  })
+
   it('uses catalog labels for a listed addressed route', async () => {
     const b = bench()
     b.api.onSubagentList = (payload) => {

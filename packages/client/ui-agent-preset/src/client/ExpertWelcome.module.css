@@ -1,0 +1,41 @@
+.root {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: min(var(--dsh-composer-card-max-width), 100%);
+  margin: 0 auto;
+  padding: 0 12px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+.copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.copy strong {
+  color: var(--dsw-alias-label-primary);
+  font-weight: 600;
+}
+
+.version {
+  flex: none;
+  color: var(--dsw-alias-label-caption);
+  font-size: 12px;
+}

@@ -2,7 +2,7 @@ import { describe, expect, expectTypeOf, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { type Agent } from '@deepseek-ai/dsh-agent'
 
-import { HarnessError, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import { createUserMessage, HarnessError, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { carrierKeyOf } from '@deepseek-ai/dsh-scope'
 import SubagentRuntime, {
   foldSubagentDescriptor,
@@ -185,6 +185,10 @@ describe('SubagentRuntime', () => {
 
   it.each([
     ['agentOptions', { agentOptions: { model: 'child-model' } }],
+    ['promptContext', { promptContext: createUserMessage({
+      content: [{ type: 'text', text: 'context' }],
+      source: { kind: 'plugin', plugin: 'test' },
+    }) }],
     ['outputSchema', { outputSchema: { type: 'object', properties: {} } }],
     ['depthLimit', { maxDepth: 1 }],
     ['toolFilter', { toolFilter: { deny: ['bash'] } }],

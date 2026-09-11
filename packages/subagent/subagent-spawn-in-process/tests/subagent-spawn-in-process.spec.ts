@@ -271,6 +271,26 @@ describe('dsh-subagent-spawn-in-process', () => {
     await parentHandle.dispose()
   })
 
+  it('mounts an explicit Agent preset instead of inheriting the parent composition', async () => {
+    const { ctx, parent } = await setup([textResponse('standard child')])
+    const mounted: string[] = []
+    ctx.provide('agentPresets', {
+      mount: (_childCtx: Context, preset: string) => { mounted.push(preset); return Promise.resolve() },
+      composedPreset: () => 'parent-preset',
+    } as never)
+
+    const run = await start(ctx, 'spawn', {
+      prompt: [{ type: 'text', text: 'p' }],
+      parent,
+      agentPreset: 'standard',
+    })
+    await run.result
+
+    expect(mounted).toEqual(['standard'])
+    expect(ctx.agents.get(run.id)?.session.header.agentPreset).toBe('standard')
+    await run.dispose()
+  })
+
   it('uses request.agentOptions.model when the parent has no model of its own', async () => {
     const { ctx } = await setup([textResponse('explicit model child')])
     // A parent with NO model (its own turns would need one supplied per-request).
@@ -296,6 +316,8 @@ describe('dsh-subagent-spawn-in-process', () => {
     const provider = ctx.subagents.getProvider('spawn')!
     expect(provider.capabilities).toEqual({
       agentOptions: true,
+      agentPreset: true,
+      promptContext: true,
       outputSchema: true,
       depthLimit: true,
       toolFilter: true,

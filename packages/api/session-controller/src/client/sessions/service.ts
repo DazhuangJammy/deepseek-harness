@@ -280,6 +280,22 @@ export class ClientSessions implements ISessions {
   }
 
   /**
+   * Open a child event window for an embedded view without moving selection.
+   * @param address - durable direct-parent address of the child.
+   * @returns the child binding after its initial history page opens.
+   */
+  async observeSubagent(address: SubagentAddress): Promise<SessionBinding> {
+    await this.manager.refreshSubagents(address.parentSessionId)
+    this.manager.observeSubagent(address)
+    const record = this.resolve(address.childSessionId)
+    if (record === undefined) {
+      throw new Error(`sessions.observeSubagent: unavailable child ${address.childSessionId}`)
+    }
+    await record.session.open()
+    return record.binding
+  }
+
+  /**
    * Resolve an already discovered direct-parent address without opening it.
    * Feature plugins use this to avoid Agent-bound RPCs in persisted child views.
    * @param id - possible addressed child id.
@@ -567,10 +583,10 @@ export class ClientSessions implements ISessions {
     return record
   }
 
-  /** The one aliveness predicate shared by scope mint and prune: host-listed or currently addressed. */
+  /** The one aliveness predicate shared by scope mint and prune: host-listed or retained by address. */
   private eligible(id: SessionId): boolean {
-    const { ids, current } = this.list.getSnapshot()
-    return current === id || ids.includes(id)
+    const { ids } = this.list.getSnapshot()
+    return ids.includes(id) || this.manager.subagentAddress(id) !== undefined
   }
 
   /** Project the manager's list snapshot into the store (title derivation is display-only). */

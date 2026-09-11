@@ -141,6 +141,8 @@ export interface Config {
    * configured root. False mounts a roster without the derived writable root.
    */
   includeUserRoot: boolean
+  /** Limits and deadline for locally authored expert prompts and their auxiliary refinement calls. */
+  experts?: ExpertConfig
 }
 
 /** One directory scanned for preset subdirectories. */
@@ -149,6 +151,24 @@ export interface PresetRoot {
   path: string
   /** Trust recorded on every preset discovered under this root. */
   trust: PresetTrust
+}
+
+/** Deployment-varying limits for the expert-prompt workflow. */
+export interface ExpertConfig {
+  /** Maximum Unicode characters in an expert's display name. */
+  maxNameCharacters: number
+  /** Maximum Unicode characters in an expert's welcome message. */
+  maxWelcomeCharacters: number
+  /** Maximum UTF-8 bytes in one prompt version. */
+  maxPromptBytes: number
+  /** Maximum recent human/assistant messages supplied as refinement evidence. */
+  maxEvidenceMessages: number
+  /** Maximum UTF-8 bytes in the complete auxiliary refinement request. */
+  maxOptimizationInputBytes: number
+  /** Maximum output tokens for one auxiliary refinement request. */
+  maxOptimizationOutputTokens: number
+  /** End-to-end auxiliary refinement deadline in milliseconds. */
+  optimizationTimeoutMs: number
 }
 
 /**

@@ -37,6 +37,9 @@
       "path": "../../core/system-prompt"
     },
     {
+      "path": "../persona"
+    },
+    {
       "path": "../../core/tools"
     },
     {
@@ -44,6 +47,9 @@
     },
     {
       "path": "../../settings/settings"
+    },
+    {
+      "path": "../../skill/skill"
     },
     {
       "path": "../../util/atomic-write"

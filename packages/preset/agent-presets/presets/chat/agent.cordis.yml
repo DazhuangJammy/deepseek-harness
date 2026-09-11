@@ -1,7 +1,7 @@
-# The `chat` agent preset: one complete conversational persona and no
-# model-facing tools, skills, project instructions, runtime context, or
-# compaction. Conversation history remains Session-owned and reaches every
-# model request.
+# The `chat` agent preset: one complete conversational persona plus the same
+# shell and filesystem tools Standard mode uses for uploaded files. It omits
+# skills, project instructions, runtime context, and compaction. Conversation
+# history remains Session-owned and reaches every model request.
 
 - id: persona
   name: '@deepseek-ai/dsh-persona'
@@ -9,3 +9,19 @@
     prefix: You are a helpful conversational assistant.
     complete: true
     includeRuntimeContext: false
+
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false

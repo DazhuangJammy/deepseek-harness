@@ -48,6 +48,13 @@ export interface ISessions {
    */
   openSubagent(address: SubagentAddress): void
   /**
+   * Open a catalogued child Session's event stream without selecting it.
+   * Used by embedded read-only views that must not replace the main conversation.
+   * @param address - durable direct-parent address of the child.
+   * @returns the live child binding after its history window opens.
+   */
+  observeSubagent(address: SubagentAddress): Promise<SessionBinding>
+  /**
    * Resolve an already discovered direct-parent address without opening it.
    * @param id - possible addressed child id.
    * @returns the retained address, when present.

@@ -411,6 +411,28 @@ Types: [ToolCallId](subsystems/core.md)
 
 Source: [`packages/fs/tool-present/src/types.ts:15`](../packages/fs/tool-present/src/types.ts)
 
+### `expert/*`
+
+<a id="expertprompt-applied--log-only"></a>
+
+#### `expert/prompt-applied` — log-only
+
+```ts persistence-catalog
+/** Complete expert prompt version selected for this Session's subsequent requests. */
+'expert/prompt-applied': {
+  /** Expert preset whose prompt was selected. */
+  readonly expertId: string
+  /** Immutable expert version selected. */
+  readonly version: number
+  /** Complete prompt installed after this event. */
+  readonly prompt: string
+  /** User action that selected the version. */
+  readonly source: ExpertPromptApplicationSource
+}
+```
+
+Source: [`packages/preset/agent-presets/src/expert-session.ts:16`](../packages/preset/agent-presets/src/expert-session.ts)
+
 ### `feedback/*`
 
 <a id="feedbackmessage-delete--log-only"></a>

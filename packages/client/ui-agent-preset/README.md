@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Use this package to choose the agent preset for a new Web GUI session, see the active preset in the session header, and manage available presets in Settings. The Agent mode picker is shown by default; Settings can hide it without changing running or historical sessions. A preset is fixed when a session is created, so changing the selection or default affects only later sessions. If the deployment provides no presets, these controls stay hidden and every session uses the host composition.
+Use this package to choose the agent preset for a new Web GUI session, manage conversation experts, and review local expert-prompt refinements. The Agent mode picker is shown by default; Settings can hide it without changing running or historical sessions. Experts reuse the preset composition and add a welcome message, prompt editor, version history, and an assistant-message action that shows a child Agent run before opening an editable side-by-side proposal in the right Sidebar. If the deployment provides no presets, the mode controls stay hidden and every session uses the host composition.
 
 ## Table of Contents
 
@@ -27,7 +27,7 @@ Use this package to choose the agent preset for a new Web GUI session, see the a
 
 Mount this plugin alongside the settings and conversation packages; the management section then shows a visibility switch that is on by default. While it is off, the new-session chip is absent and the Host composes an unnamed session from the deployment default (`standard` in the shipped Web bundle). Turning it on restores the saved user default, or uses the deployment default when none has been saved, and carries that default to the current blank task; a chip pick itself is staged only once for the next blank session. Turning the picker off again returns the current blank task to the deployment default the same way and discards an unconsumed stage; started and historical sessions keep their labels, compositions, and recorded history.
 
-The shipped roster contains `standard`, `ptc`, `minimal`, `cordis`, and `chat`. The `chat` preset keeps the normal Session transcript and model route while omitting tools, skills, project instructions, runtime context, and compaction.
+The shipped roster contains `standard`, `ptc`, `minimal`, `cordis`, and `chat`. The `chat` preset keeps the normal Session transcript and model route, uses Standard mode's shell and filesystem tools for uploaded files, and omits skills, project instructions, runtime context, and compaction.
 
 ### Managing the roster
 
@@ -37,6 +37,12 @@ The settings section shows the roster as cards: a copy dialog is the only way a 
 
 When the roster carries the self-referential `cordis` preset, its dashed add-card stays disabled until the picker is enabled. It then stages `cordis` and starts a new session — the section closes the settings panel and the new-session chip's own applier composes the blank session the workspace flow produces.
 
+### Experts
+
+The composer's add menu opens a searchable expert picker. Expert list stays first, Add expert stays directly below it, and the expert rows follow. Experts never appear in the Agent preset picker or Settings roster. Each expert row keeps its version beside the name and pins Edit to the far edge, revealing it on hover or keyboard focus; touch layouts keep Edit visible. Selecting an expert applies its managed Chat composition to the current blank Session without displaying its prompt as a user message. The blank conversation shows the expert's welcome message as the first-message cue. Expert list, Add expert, and Edit replace an open refinement review with the requested management page; the expert-list page also provides Add expert. Add expert assigns a hidden stable identifier automatically. Add and edit show the optional icon, name, welcome message, prompt, and version history fields in the right Sidebar. Saving changed prompt text applies the resulting version to the current Session when it runs that expert; other open Sessions keep their installed prompts. Selecting a version opens the same highlighted side-by-side prompt comparison in read-only mode; metadata-only edits create no version entry.
+
+Each finalized assistant message in an expert Session carries an Optimize expert prompt action. The action expands the right Sidebar immediately and reuses the normal conversation view to show the child Agent's context, compact Chinese task, reasoning, skill loads, and tools without a composer. The complete expert prompt and conversation evidence use the existing collapsed Context injection row instead of a user bubble. Reasoning uses the normal collapsed disclosure and live one-line preview. The final candidate uses the existing structured-output tool rather than printing JSON as assistant prose. A Stop prompt optimization button remains at the run header's far edge during startup and execution; it aborts the start or disposes the published child. A changed candidate renders the complete current and proposed prompts side by side with word-level highlighting and Chinese change reasons. The proposed prompt remains directly editable and recomputes its highlights before acceptance; a no-change candidate states why. Keep current prompt dismisses the candidate. Accept new version is the only action that writes it.
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -45,7 +51,7 @@ When the roster carries the self-referential `cordis` preset, its dashed add-car
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The settings section writes the Host's existing `agent-presets` namespace through `settings.update`. Its visibility switch sets only `modeSelectionEnabled`, and its make-default action writes `default` only while the picker is shown. After either write, the Host roster supplies the effective default, and the chip controller's `agentPresets/select` path carries it to the same still-blank session; that path is the only session-mutation API these surfaces use. Display options and Host-effective visibility come from `agentPresets/list` — the roster already marks the effective Host default and carries `modeSelectionEnabled`, so a non-loopback read-only client stays consistent without introspecting the settings schema. The settings section queries `settings.canOpenAgentPresetDirectory()` when it first loads and joins that result with the roster; a failed query removes only the native-open affordance. The new-session chip renders only while `modeSelectionEnabled` is true; hiding it drops a pending stage and local menu or refusal state, while the header label remains registered and reads each session's recorded preset. The stage is applied when a session arrives (covering both the session a workspace connect created and the blank one it reused) and dropped on refusal. A refusal announces itself as a transient banner over the composer column, because the chip's label has already reverted and a preset the Host refuses to mount is one discovery reported healthy — its roster card carries no reason to go back and read. Only a pick a person just made is announced; the applier that runs when a session becomes current is not. [`dsh-client-connection`](../connection/README.md) authenticates `agentPresets/read`, `agentPresets/copy`, `settings/openAgentPresetDirectory`, `agentPresets/deletePreset`, `agentPresets/list`, and every other Host API method with the same browser session. A composition still names the plugins a session runs, so reading one is reconnaissance, while copy, delete, and the settings-owned directory opener manage the roster and drive the Host desktop. The section re-reads on its own actions, `settings/document-updated`, and `connection/reset`, because composition files are edited outside the browser and nothing on the wire announces a file change.
+The settings section writes the Host's existing `agent-presets` namespace through `settings.update`. Its visibility switch sets only `modeSelectionEnabled`, and its make-default action writes `default` only while the picker is shown. After either write, the Host roster supplies the effective default, and the chip controller's `agentPresets/select` path carries it to the same still-blank session; expert selection uses that same guarded path. Display options and Host-effective visibility come from `agentPresets/list`, while expert management uses the typed expert endpoints and one shared browser store. The expert store keys optimization state by Session, so two open conversations cannot exchange candidates. During optimization, `sessions.observeSubagent()` opens the child event window without changing the selected main Session, and the renderer-injected `FixedSessionSlotView` binds the existing conversation slot to that child. The existing command menu owns expert search and selection; the right Sidebar owns management and review. [`dsh-client-connection`](../connection/README.md) authenticates all of these Host methods with the same browser session. The section re-reads on its own actions, `settings/document-updated`, and `connection/reset`, because ordinary composition files may still be edited outside the browser.
 
 </details>
 
@@ -66,11 +72,11 @@ Read these pages when the preset surface is not enough. They move from the brows
 <a id="model-experience"></a>
 ## Model Experience
 
-Indirectly, through the preset a later session is composed from; the preset it selects owns every model-facing effect.
+Indirectly, through the selected preset and the one-shot child Agent documented by [`dsh-agent-presets`](../../preset/agent-presets/README.md); progress and comparison rendering add no model-visible content of their own.
 
 #### KV Cache effect
 
-No direct invalidation. Changing picker visibility or the default does not alter a running session's composition or prefix, or a historical session's recorded preset; a session created afterwards establishes its own prefix from its own composition.
+Changing picker visibility, defaults, unsaved editor fields, or an unaccepted candidate does not alter a running Session's prefix. Saving changed expert prompt text or accepting a refinement changes only the addressed Session's later requests through the Host workflow; an ordinary branch uses the current expert version. Each applied version starts reuse from its new prefix.
 
 ## Known Limitations and Deferred Work
 

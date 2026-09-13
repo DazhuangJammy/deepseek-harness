@@ -64,7 +64,17 @@ function fakeContext() {
     },
     saveExpert: (sessionId: SessionId, id: string, version: number, name: string, welcome: string, prompt: string) => {
       calls.push(`save:${sessionId}:${id}:${String(version)}`)
-      current = { ...current, name, welcome, prompt, currentVersion: version + 1 }
+      const promptChanged = current.prompt !== prompt
+      current = {
+        ...current,
+        name,
+        welcome,
+        prompt,
+        currentVersion: promptChanged ? version + 1 : version,
+        versions: promptChanged
+          ? [{ version: version + 1, createdAt: 2, summary: 'Manual edit', changes: [] }, ...current.versions]
+          : current.versions,
+      }
       return ok(current)
     },
     select: (sessionId: SessionId, id: string) => { calls.push(`select:${sessionId}:${id}`); return ok(id) },
@@ -104,7 +114,30 @@ describe('expert UI controller', () => {
     expect(controller.store.getSnapshot().editor).toMatchObject({
       kind: 'edit',
       document: { currentVersion: 2, prompt: 'Ask one question at a time.' },
+      saving: false,
+      saved: true,
     })
+  })
+
+  it('does not save an unchanged draft and resets Saved after the next edit', async () => {
+    const { ctx, calls } = fakeContext()
+    const controller = new ExpertUiController(ctx)
+    const sessionId = SessionId('editor-state')
+
+    await controller.beginEdit(sessionId, 'interview')
+    await controller.save(sessionId)
+    expect(calls.some(call => call.startsWith('save:'))).toBe(false)
+
+    controller.patchDraft({ welcome: 'Welcome back.' })
+    await controller.save(sessionId)
+    expect(controller.store.getSnapshot().editor).toMatchObject({
+      kind: 'edit',
+      document: { currentVersion: 1, versions: [{ version: 1 }] },
+      saved: true,
+    })
+
+    controller.patchDraft({ icon: 'briefcase' })
+    expect(controller.store.getSnapshot().editor).toMatchObject({ kind: 'edit', saved: false })
   })
 
   it('creates an expert with its hidden generated identifier', async () => {
@@ -382,9 +415,10 @@ describe('expert UI controller', () => {
       editor: {
         kind: 'edit', document: expert, draft: {
           id: expert.id, name: expert.name, welcome: expert.welcome, prompt: expert.prompt, icon: undefined,
-        }, saving: false, error: null, versionReview: null,
+        }, saving: false, saved: false, error: null, versionReview: null,
       },
     })
+    controller.patchDraft({ name: 'Changed expert' })
     await controller.save(sessionId)
     expect(controller.store.getSnapshot().editor).toMatchObject({ kind: 'edit', saving: false, error: 'save failed' })
     await expect(controller.select(sessionId, 'ok')).resolves.toBeUndefined()

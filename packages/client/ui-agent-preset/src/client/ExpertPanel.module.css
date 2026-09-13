@@ -59,10 +59,15 @@
 }
 
 .iconButton:hover,
-.iconChoice:hover,
+.iconChoice:hover:not(:disabled),
 .iconChoice[aria-pressed='true'] {
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.iconChoice:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .form {

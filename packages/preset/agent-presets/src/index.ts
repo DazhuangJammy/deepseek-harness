@@ -36,7 +36,6 @@ import type { ContentBlock, UserMessage } from '@deepseek-ai/dsh-llm'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-skill'
-import { deadline } from '@deepseek-ai/dsh-timeout'
 import type {
   AgentPresetDocument, AgentPresetRoster, ExpertDocument, ExpertIcon,
   ExpertOptimizationOutcome, ExpertOptimizationProposal, ExpertOptimizationRun,
@@ -67,7 +66,7 @@ import {
   synchronizeExpertComposition, updateExpert, validateExpertInput,
 } from './expert.ts'
 import {
-  buildExpertOptimizationTask, EXPERT_OPTIMIZATION_OUTPUT_SCHEMA, EXPERT_OPTIMIZATION_PERSONA,
+  buildExpertOptimizationTask, EXPERT_OPTIMIZATION_OUTPUT_SCHEMA,
   expertPromptRefinerRegistration, expertProposalFromOutput,
 } from './expert-optimizer.ts'
 import {
@@ -104,7 +103,6 @@ interface ExpertSubagentRun {
 interface HeldExpertOptimization {
   readonly sessionId: SessionId
   readonly run: ExpertSubagentRun
-  readonly deadline: { readonly signal: AbortSignal; [Symbol.dispose](): void }
   proposal?: ExpertOptimizationProposal
   disposal?: Promise<void>
 }
@@ -117,10 +115,8 @@ interface ExpertSubagentRuntime {
     readonly prompt: ContentBlock[]
     readonly promptContext: UserMessage
     readonly outputSchema: ObjectJsonSchema
-    readonly persona: string
     readonly signal: AbortSignal
     readonly agentPreset: string
-    readonly agentOptions: { readonly maxTokens: number }
   }): Promise<ExpertSubagentRun>
 }
 
@@ -180,9 +176,6 @@ export class AgentPresets extends TypertRemoteService {
       maxWelcomeCharacters: z.number().step(1).min(1).default(500),
       maxPromptBytes: z.number().step(1).min(1).default(100_000),
       maxEvidenceMessages: z.number().step(1).min(1).default(12),
-      maxOptimizationInputBytes: z.number().step(1).min(1).default(300_000),
-      maxOptimizationOutputTokens: z.number().step(1).min(1).default(16_000),
-      optimizationTimeoutMs: z.number().step(1).min(1).default(120_000),
     }).default(DEFAULT_EXPERT_CONFIG),
   }) as z<Config>
 
@@ -519,9 +512,8 @@ export class AgentPresets extends TypertRemoteService {
   /** Reverse index used to retire one Session's previous candidate in constant time. */
   private readonly expertProposalBySession = new Map<SessionId, ExpertProposalId>()
 
-  /** Cancel the operation deadline and await child cleanup at most once. */
+  /** Cancel the child and await its cleanup at most once. */
   private disposeExpertOptimization(held: HeldExpertOptimization): Promise<void> {
-    held.deadline[Symbol.dispose]()
     held.disposal ??= held.run.dispose().catch((error: unknown) => {
       this.selfCtx.logger.warn(`expert optimization child disposal failed: ${String(error)}`)
     })
@@ -900,16 +892,10 @@ export class AgentPresets extends TypertRemoteService {
       expert,
       refinement.recent,
       targetMessageId,
-      this.expertConfig,
     )
     const previous = this.expertProposalBySession.get(sessionId)
     if (previous !== undefined) await this.retireExpertOptimization(previous)
     const proposalId = brandString<ExpertProposalId>(randomUUID())
-    const operationDeadline = deadline(
-      signal,
-      this.expertConfig.optimizationTimeoutMs,
-      'EXPERT_PROMPT_OPTIMIZATION_TIMEOUT',
-    )
     let run: ExpertSubagentRun
     try {
       run = await agent.runMaintenance(maintenanceSignal => subagents.start('spawn', {
@@ -918,20 +904,17 @@ export class AgentPresets extends TypertRemoteService {
         prompt: task.prompt,
         promptContext: task.promptContext,
         outputSchema: EXPERT_OPTIMIZATION_OUTPUT_SCHEMA,
-        signal: AbortSignal.any([operationDeadline.signal, maintenanceSignal]),
+        signal: AbortSignal.any([signal, maintenanceSignal]),
         agentPreset: 'standard',
-        persona: EXPERT_OPTIMIZATION_PERSONA,
-        agentOptions: { maxTokens: this.expertConfig.maxOptimizationOutputTokens },
       }))
     } catch (error) {
-      operationDeadline[Symbol.dispose]()
       if (error instanceof RemoteError) throw error
       throw new RemoteError('expert/optimization-unavailable', `专家提示词优化失败：${String(error)}`, {
         sessionId,
         reason: String(error),
       })
     }
-    const held = { sessionId, run, deadline: operationDeadline }
+    const held = { sessionId, run }
     this.expertProposalBySession.set(sessionId, proposalId)
     this.expertProposals.set(proposalId, held)
     void this.settleExpertOptimization(held, proposalId, expert, targetMessageId)

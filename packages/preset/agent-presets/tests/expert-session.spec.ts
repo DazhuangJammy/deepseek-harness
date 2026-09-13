@@ -1,4 +1,4 @@
-/** Expert refinement projection keeps a bounded evidence window and applied prompt override. */
+/** Expert refinement projection keeps visible evidence and the applied prompt override. */
 
 import {
   createAssistantMessage, createSystemMessage, createUserMessage,
@@ -35,7 +35,7 @@ const user = (seq: number, text: string): SessionEvent => ({
   surfaceOp: 'append',
 })
 
-const assistant = (seq: number, text: string): SessionEvent => ({
+const assistant = (seq: number, text: string, reasoning?: string): SessionEvent => ({
   type: 'assistant/message',
   seq: SessionSeq(seq),
   time: seq,
@@ -43,23 +43,28 @@ const assistant = (seq: number, text: string): SessionEvent => ({
     turn: 1,
     step: seq,
     message: createAssistantMessage({
-      content: [{ type: 'text', text }],
+      content: [
+        ...reasoning === undefined ? [] : [{ type: 'reasoning' as const, text: reasoning }],
+        { type: 'text', text },
+      ],
       source: { provider: 'mock', model: 'mock' },
     }),
-    stream: [],
+    stream: reasoning === undefined ? [] : [{
+      type: 'reasoning-chunks', time0: seq, index: 0, dt: [], texts: [reasoning],
+    }],
   },
   surfaceOp: 'append',
 })
 
 describe('expert refinement projection', () => {
-  it('bounds evidence, attaches the active prompt to answers, and restores the applied version', () => {
+  it('bounds visible evidence, attaches active prompts, and restores the applied version', () => {
     const definition = expertRefinementProjectionDefinition(3)
     let state = definition.init(header, SessionLogOffset(0))
     state = definition.apply(state, system(0, 'Prompt v1'))
     state = definition.apply(state, user(1, 'Weak request'))
     state = definition.apply(state, assistant(2, 'Weak answer'))
     state = definition.apply(state, user(3, 'Correct it'))
-    state = definition.apply(state, assistant(4, 'Better answer'))
+    state = definition.apply(state, assistant(4, 'Better answer', 'Private reasoning must stay private'))
 
     expect(state.recent.map(message => [message.role, message.text])).toEqual([
       ['assistant', 'Weak answer'],
@@ -68,6 +73,7 @@ describe('expert refinement projection', () => {
     ])
     expect(state.recent[0]?.prompt).toBe('Prompt v1')
     expect(state.recent[2]?.prompt).toBe('Prompt v1')
+    expect(JSON.stringify(state.recent)).not.toContain('Private reasoning must stay private')
 
     state = definition.apply(state, {
       type: 'expert/prompt-applied',

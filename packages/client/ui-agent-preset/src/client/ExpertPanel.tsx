@@ -10,7 +10,7 @@ import {
   IconLoadingOutline16, IconPlusOutline16, IconRefreshOutline16, IconStopFill16, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { EXPERT_ICONS, expertIcon } from './ExpertIcon.tsx'
-import type { ExpertDraft, ExpertUiState } from './expert-store.ts'
+import { expertDraftChanged, type ExpertDraft, type ExpertUiState } from './expert-store.ts'
 import css from './ExpertPanel.module.css'
 
 export interface ExpertPanelInjected {
@@ -34,9 +34,10 @@ export type ExpertPanelProps =
   & PropsLocale<'settings.agentPreset'>
   & InjectFace<ExpertPanelInjected>
 
-function IconChoice({ icon, selected, onSelect, label }: {
+function IconChoice({ icon, selected, disabled, onSelect, label }: {
   icon: ExpertIcon
   selected: boolean
+  disabled: boolean
   onSelect: () => void
   label: string
 }): ReactNode {
@@ -48,6 +49,7 @@ function IconChoice({ icon, selected, onSelect, label }: {
         className={css.iconChoice}
         aria-label={label}
         aria-pressed={selected}
+        disabled={disabled}
         onClick={onSelect}
       >
         <Icon />
@@ -63,6 +65,10 @@ function Editor({ state, actions, t }: {
 }): ReactNode {
   const { draft } = state
   const create = state.kind === 'create'
+  const changed = state.kind === 'create' || expertDraftChanged(state.document, draft)
+  const saveLabel = state.saving
+    ? t('expert.saving')
+    : state.saved && !changed ? t('expert.saved') : t('expert.save')
   const title = create ? t('expert.create') : t('expert.edit', { name: state.document.name })
   return (
     <div className={css.page}>
@@ -81,6 +87,7 @@ function Editor({ state, actions, t }: {
           <span>{t('expert.name')}</span>
           <input
             value={draft.name}
+            disabled={state.saving}
             placeholder={t('expert.namePlaceholder')}
             onChange={(event) => { actions.patchDraft({ name: event.target.value }) }}
           />
@@ -93,6 +100,7 @@ function Editor({ state, actions, t }: {
                 key={icon}
                 icon={icon}
                 selected={draft.icon === icon}
+                disabled={state.saving}
                 label={t(`expert.icon.${icon}`)}
                 onSelect={() => { actions.patchDraft({ icon: draft.icon === icon ? undefined : icon }) }}
               />
@@ -104,6 +112,7 @@ function Editor({ state, actions, t }: {
           <textarea
             className={css.welcome}
             value={draft.welcome}
+            disabled={state.saving}
             placeholder={t('expert.welcomePlaceholder')}
             onChange={(event) => { actions.patchDraft({ welcome: event.target.value }) }}
           />
@@ -113,6 +122,7 @@ function Editor({ state, actions, t }: {
           <textarea
             className={css.prompt}
             value={draft.prompt}
+            disabled={state.saving}
             spellCheck={false}
             placeholder={t('expert.promptPlaceholder')}
             onChange={(event) => { actions.patchDraft({ prompt: event.target.value }) }}
@@ -123,10 +133,10 @@ function Editor({ state, actions, t }: {
           <Button variant="outline" disabled={state.saving} onClick={actions.openList}>{t('cancel')}</Button>
           <Button
             icon={state.saving ? <IconLoadingOutline16 className={css.spinning} /> : <IconCheckOutline16 />}
-            disabled={state.saving || draft.name.trim() === '' || draft.prompt.trim() === ''}
+            disabled={state.saving || !changed || draft.name.trim() === '' || draft.prompt.trim() === ''}
             onClick={() => { void actions.save() }}
           >
-            {state.saving ? t('expert.saving') : t('expert.save')}
+            <span aria-live="polite">{saveLabel}</span>
           </Button>
         </div>
       </div>

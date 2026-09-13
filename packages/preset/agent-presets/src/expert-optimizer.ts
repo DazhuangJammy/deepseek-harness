@@ -8,7 +8,6 @@ import type { SkillRegistration } from '@deepseek-ai/dsh-skill'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { z } from 'zod'
-import type { ExpertConfig } from './preset.ts'
 import type {
   ExpertDocument, ExpertOptimizationProposal, ExpertPromptChange, ExpertProposalId,
 } from './types.ts'
@@ -16,12 +15,6 @@ import type { ExpertEvidenceMessage } from './expert-session.ts'
 
 /** Stable name invoked by the internal optimization task. */
 export const EXPERT_PROMPT_REFINER_SKILL = 'expert-prompt-refiner'
-/** Chinese persona shadowing Standard mode only for an optimization child. */
-export const EXPERT_OPTIMIZATION_PERSONA = [
-  '你是专家提示词优化智能体。',
-  '除引用的原提示词、对话原文和固定字段名外，所有分析、说明与结果文字都使用简体中文。',
-  '只根据已提供证据做最小必要修改，不扩写无关规则。',
-].join('\n')
 const SKILL_ROOT = new URL('../presets/chat/skills/expert-prompt-refiner/', import.meta.url)
 
 const candidateSchema = z.object({
@@ -97,9 +90,8 @@ export function expertPromptRefinerRegistration(): SkillRegistration {
  * Frame one user-explicit skill invocation for a standard-mode child Agent.
  * @param agent - parent expert Agent whose evidence window is addressed.
  * @param expert - exact prompt version used by the selected answer.
- * @param recent - bounded human/assistant evidence.
+ * @param recent - bounded visible human/assistant evidence.
  * @param targetMessageId - finalized answer ending the evidence window.
- * @param config - resolved input-size policy.
  * @returns the compact child prompt, injected context, and evidence sequences used by the run.
  */
 export function buildExpertOptimizationTask(
@@ -107,7 +99,6 @@ export function buildExpertOptimizationTask(
   expert: ExpertDocument,
   recent: readonly ExpertEvidenceMessage[],
   targetMessageId: MessageId,
-  config: ExpertConfig,
 ): ExpertOptimizationTask {
   const evidence = evidenceFor(agent, recent, targetMessageId)
   const framed = JSON.stringify({ originalPrompt: expert.prompt, conversationEvidence: evidence })
@@ -119,12 +110,6 @@ export function buildExpertOptimizationTask(
     '新版提示词保持原语言；summary 和 reasons 必须使用简体中文。',
   ].join('\n')
   const context = `<expert-refinement-input>${framed}</expert-refinement-input>`
-  const inputBytes = Buffer.byteLength(skillContent(), 'utf8')
-    + Buffer.byteLength(task, 'utf8')
-    + Buffer.byteLength(context, 'utf8')
-  if (inputBytes > config.maxOptimizationInputBytes) {
-    throw unavailable(agent.id, `优化输入为 ${String(inputBytes)} 字节，超过配置上限`)
-  }
   return {
     prompt: [{ type: 'text', text: task }],
     promptContext: createUserMessage({

@@ -7,7 +7,6 @@ import { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import { Session, SessionId, SessionSeq } from '@deepseek-ai/dsh-session'
 import {
   buildExpertOptimizationTask,
-  EXPERT_OPTIMIZATION_PERSONA,
   expertPromptRefinerRegistration,
   expertProposalFromOutput,
 } from '../src/expert-optimizer.ts'
@@ -41,7 +40,6 @@ describe('expert prompt optimizer', () => {
     expect(registration.content).toContain('name: expert-prompt-refiner')
     expect(registration.content).toContain('<output-format>')
     expect(registration.resourceBase).toBeUndefined()
-    expect(EXPERT_OPTIMIZATION_PERSONA).toContain('所有分析、说明与结果文字都使用简体中文')
   })
 
   it('frames the selected evidence as an explicit skill task', () => {
@@ -59,7 +57,6 @@ describe('expert prompt optimizer', () => {
         },
       ],
       targetMessageId,
-      DEFAULT_EXPERT_CONFIG,
     )
     const text = task.prompt[0]?.type === 'text' ? task.prompt[0].text : ''
     const context = task.promptContext.content[0]?.type === 'text'
@@ -77,16 +74,10 @@ describe('expert prompt optimizer', () => {
     expect(task.evidenceSeqs).toEqual([SessionSeq(2), SessionSeq(3)])
   })
 
-  it('rejects a missing target answer and an oversized complete request', () => {
+  it('rejects a missing target answer', () => {
     expect(() => buildExpertOptimizationTask(
-      agent(), expert, [], targetMessageId, DEFAULT_EXPERT_CONFIG,
+      agent(), expert, [], targetMessageId,
     )).toThrow(/所选回答不在当前证据窗口内/)
-
-    expect(() => buildExpertOptimizationTask(
-      agent(), expert, [{
-        seq: SessionSeq(1), role: 'assistant', text: 'answer', messageId: targetMessageId,
-      }], targetMessageId, { ...DEFAULT_EXPERT_CONFIG, maxOptimizationInputBytes: 1 },
-    )).toThrow(/超过配置上限/)
   })
 
   it('validates a local revision returned by the child Agent', () => {

@@ -214,6 +214,7 @@ describe('expert prompt files', () => {
       name: 'Renamed coach', welcome: '', prompt: before.prompt,
     }, 'metadata only', [])
     expect(updated).toMatchObject({ name: 'Renamed coach', currentVersion: 1 })
+    expect(updated.versions).toEqual(before.versions)
     expect(updated).not.toHaveProperty('icon')
   })
 

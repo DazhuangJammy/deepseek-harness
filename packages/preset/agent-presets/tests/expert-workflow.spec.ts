@@ -169,7 +169,10 @@ describe('expert optimization workflow', () => {
     const parentHandle = await createAgent(ctx, 'expert-parent', 'interview')
     const parent = parentHandle.agent
     const answer = createAssistantMessage({
-      content: [{ type: 'text', text: 'What system did you scale?' }],
+      content: [
+        { type: 'reasoning', text: 'Private workflow reasoning must not reach refinement.' },
+        { type: 'text', text: 'What system did you scale?' },
+      ],
       source: { provider: 'mock', model: 'selected-model' },
     })
     parent.session.append('turn/start', { turn: 1 })
@@ -186,7 +189,10 @@ describe('expert optimization workflow', () => {
       turn: 1,
       step: 1,
       message: answer,
-      stream: [],
+      stream: [{
+        type: 'reasoning-chunks', time0: 1, index: 0, dt: [],
+        texts: ['Private workflow reasoning must not reach refinement.'],
+      }],
     }, { surfaceOp: 'append' })
     parent.session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
     const branchSeed = parent.session.snapshotEvents()
@@ -207,14 +213,16 @@ describe('expert optimization workflow', () => {
     expect(run.childSessionId).toBe('optimizer-child')
     expect(startRequests[0]).toMatchObject({
       agentPreset: 'standard',
-      agentOptions: { maxTokens: 16_000 },
       promptContext: { source: { kind: 'plugin', plugin: 'expert-prompt-refiner' } },
       outputSchema: { type: 'object', required: ['summary', 'revisedPrompt', 'reasons'] },
     })
-    const persona = startRequests[0]?.['persona']
-    expect(typeof persona).toBe('string')
-    if (typeof persona !== 'string') throw new Error('optimization child persona is absent')
-    expect(persona).toContain('所有分析、说明与结果文字都使用简体中文')
+    expect(startRequests[0]).not.toHaveProperty('agentOptions')
+    expect(startRequests[0]).not.toHaveProperty('persona')
+    const promptContext = startRequests[0]?.['promptContext'] as { content: ContentBlock[] }
+    const promptContextText = promptContext.content[0]?.type === 'text' ? promptContext.content[0].text : ''
+    expect(promptContextText).toContain('"originalPrompt":"Ask one question."')
+    expect(promptContextText).toContain('"text":"What system did you scale?"')
+    expect(promptContextText).not.toContain('Private workflow reasoning must not reach refinement.')
     const prompt = (startRequests[0]?.['prompt'] as ContentBlock[] | undefined)?.[0]
     expect(prompt?.type === 'text' ? prompt.text.startsWith('/expert-prompt-refiner\n') : false).toBe(true)
     expect(prompt?.type === 'text' ? prompt.text.includes('Ask one question.') : true).toBe(false)
@@ -370,6 +378,36 @@ describe('expert optimization workflow', () => {
     )).rejects.toBe(remote)
   })
 
+  it('keeps the standard child running beyond the former refinement deadline', async () => {
+    const result = Promise.withResolvers<{ output: ContentBlock[]; stopReason: string }>()
+    let childSignal: AbortSignal | undefined
+    const ctx = await workflowHarness((request) => {
+      childSignal = request['signal'] as AbortSignal
+      return Promise.resolve({
+        id: SessionId('unbounded-child'),
+        result: result.promise,
+        dispose: () => {
+          result.resolve({ output: [], stopReason: 'aborted' })
+          return Promise.resolve()
+        },
+      })
+    })
+    const parent = await createAgent(ctx, 'unbounded-parent', 'interview')
+    const answerId = appendAnswer(parent.agent)
+
+    vi.useFakeTimers()
+    try {
+      const run = await ctx.agentPresets.remoteExportOptimizeExpert(
+        parent.agent.id, answerId, new AbortController().signal,
+      )
+      await vi.advanceTimersByTimeAsync(120_001)
+      expect(childSignal?.aborted).toBe(false)
+      await ctx.agentPresets.remoteExportDismissExpertOptimization(parent.agent.id, run.proposalId)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('turns incomplete child settlements into reviewable failures', async () => {
     const runs: ChildRunDouble[] = [
       {
@@ -519,7 +557,6 @@ describe('expert optimization workflow', () => {
     const held = {
       sessionId: parentId,
       run: { id: SessionId('retirement-child'), result: Promise.resolve(output({})), dispose },
-      deadline: { [Symbol.dispose]: vi.fn() },
     }
     const internals = ctx.agentPresets as unknown as {
       expertProposals: Map<ExpertProposalId, typeof held>

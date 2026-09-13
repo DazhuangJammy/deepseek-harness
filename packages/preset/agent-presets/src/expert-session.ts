@@ -26,10 +26,11 @@ declare module '@deepseek-ai/dsh-session/types' {
   }
 }
 
-/** One recent human or assistant message retained for refinement evidence. */
+/** One recent human input or assistant final-text answer retained for refinement evidence. */
 export interface ExpertEvidenceMessage {
   readonly seq: SessionSeq
   readonly role: 'user' | 'assistant'
+  /** Concatenated text blocks; reasoning blocks and Assistant stream records are excluded. */
   readonly text: string
   readonly messageId?: MessageId | undefined
   /** Complete prompt in force for this assistant answer. */
@@ -63,7 +64,8 @@ const stateSchema = z.object({
   }).strict()),
 }).strict()
 
-function textOf(message: Message): string {
+/** Return only end-user-visible text blocks from one durable message. */
+function visibleTextOf(message: Message): string {
   return message.content
     .filter((block): block is Extract<(typeof message.content)[number], { type: 'text' }> => block.type === 'text')
     .map(block => block.text)
@@ -72,7 +74,7 @@ function textOf(message: Message): string {
 
 /**
  * Build the bounded host-only projection for one deployment policy.
- * @param limit - maximum recent human/assistant messages retained.
+ * @param limit - maximum recent human inputs and assistant final-text answers retained.
  * @returns projection definition registered by the agent-preset service.
  */
 export function expertRefinementProjectionDefinition(
@@ -92,14 +94,14 @@ export function expertRefinementProjectionDefinition(
     apply(state, event) {
       switch (event.type) {
         case 'system/message':
-          return { ...state, activePrompt: textOf(event.data.message) }
+          return { ...state, activePrompt: visibleTextOf(event.data.message) }
         case 'user/message': {
           if (event.data.source.kind !== 'user') return state
-          const text = textOf(event.data)
+          const text = visibleTextOf(event.data)
           return text.trim() === '' ? state : append(state, { seq: event.seq, role: 'user', text })
         }
         case 'assistant/message': {
-          const text = textOf(event.data.message)
+          const text = visibleTextOf(event.data.message)
           return text.trim() === '' ? state : append(state, {
             seq: event.seq,
             role: 'assistant',

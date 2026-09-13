@@ -139,7 +139,7 @@ export interface Config {
    * configured root. False mounts a roster without the derived writable root.
    */
   includeUserRoot: boolean
-  /** Limits and deadline for locally authored expert prompts and their auxiliary refinement calls. */
+  /** Limits for locally authored expert prompts and refinement evidence. */
   experts?: ExpertConfig
 }
 
@@ -159,14 +159,8 @@ export interface ExpertConfig {
   maxWelcomeCharacters: number
   /** Maximum UTF-8 bytes in one prompt version. */
   maxPromptBytes: number
-  /** Maximum recent human/assistant messages supplied as refinement evidence. */
+  /** Maximum recent human inputs and assistant final-text answers supplied as refinement evidence. */
   maxEvidenceMessages: number
-  /** Maximum UTF-8 bytes in the complete auxiliary refinement request. */
-  maxOptimizationInputBytes: number
-  /** Maximum output tokens for one auxiliary refinement request. */
-  maxOptimizationOutputTokens: number
-  /** End-to-end auxiliary refinement deadline in milliseconds. */
-  optimizationTimeoutMs: number
 }
 
 /**

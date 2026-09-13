@@ -70,6 +70,7 @@ describe('expert panel', () => {
           icon: undefined,
         },
         saving: false,
+        saved: false,
         error: null,
       },
       optimizations: new Map(),
@@ -179,6 +180,7 @@ describe('expert panel', () => {
         },
         draft: { id: 'expert-1', name: 'Expert', welcome: '', prompt: 'Ask one focused question.', icon: undefined },
         saving: false,
+        saved: false,
         error: null,
         versionReview: null,
       },
@@ -256,20 +258,20 @@ describe('expert panel', () => {
     const state: ExpertUiState = {
       status: 'ready', error: null, authorable: true, experts: [], optimizations: new Map(),
       editor: {
-        kind: 'create', saving: false, error: 'Fix the draft',
+        kind: 'create', saving: false, saved: false, error: 'Fix the draft',
         draft: { id: 'expert-new', name: 'Coach', welcome: 'Hello', prompt: 'Ask.', icon: 'briefcase' },
       },
     }
     const view = render(<ExpertPanel {...panelProps(state, { patchDraft, save, openList })} />)
 
-    fireEvent.click(screen.getByRole('button', { name: '返回专家列表' }))
+    fireEvent.click(screen.getByRole('button', { name: '返回智能体列表' }))
     fireEvent.click(screen.getByRole('button', { name: '取消' }))
     fireEvent.change(screen.getByRole('textbox', { name: '名字' }), { target: { value: 'Next' } })
     fireEvent.change(screen.getByRole('textbox', { name: '欢迎语' }), { target: { value: 'Welcome' } })
     fireEvent.change(screen.getByRole('textbox', { name: '提示词' }), { target: { value: 'Prompt' } })
-    fireEvent.click(screen.getByRole('button', { name: '商务专家' }))
-    fireEvent.click(screen.getByRole('button', { name: '通用专家' }))
-    fireEvent.click(screen.getByRole('button', { name: '保存专家' }))
+    fireEvent.click(screen.getByRole('button', { name: '商务智能体' }))
+    fireEvent.click(screen.getByRole('button', { name: '通用智能体' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存智能体' }))
 
     expect(openList).toHaveBeenCalledTimes(2)
     expect(patchDraft.mock.calls).toEqual([
@@ -280,10 +282,17 @@ describe('expert panel', () => {
 
     const saving: ExpertUiState = {
       ...state,
-      editor: { ...state.editor as Extract<ExpertUiState['editor'], { kind: 'create' }>, saving: true, error: null },
+      editor: {
+        ...state.editor as Extract<ExpertUiState['editor'], { kind: 'create' }>,
+        saving: true,
+        saved: false,
+        error: null,
+      },
     }
     view.rerender(<ExpertPanel {...panelProps(saving)} />)
     expect(screen.getByRole('button', { name: '正在保存…' })).toHaveProperty('disabled', true)
+    for (const textbox of screen.getAllByRole('textbox')) expect(textbox).toHaveProperty('disabled', true)
+    expect(screen.getByRole('button', { name: '商务智能体' })).toHaveProperty('disabled', true)
 
     const createEditor = state.editor as Extract<ExpertUiState['editor'], { kind: 'create' }>
     const incomplete: ExpertUiState = {
@@ -294,7 +303,45 @@ describe('expert panel', () => {
       },
     }
     view.rerender(<ExpertPanel {...panelProps(incomplete)} />)
-    expect(screen.getByRole('button', { name: '保存专家' })).toHaveProperty('disabled', true)
+    expect(screen.getByRole('button', { name: '保存智能体' })).toHaveProperty('disabled', true)
+  })
+
+  it('enables saving only after an edit and confirms a successful save', () => {
+    const document = {
+      id: 'expert-1', name: 'Expert', welcome: 'Hello', prompt: 'Ask.', currentVersion: 1, updatedAt: 1,
+      versions: [{ version: 1, createdAt: 1, summary: 'Initial version', changes: [] }],
+    }
+    const base: ExpertUiState = {
+      status: 'ready', error: null, authorable: true, experts: [], optimizations: new Map(),
+      editor: {
+        kind: 'edit', document, draft: { ...document, icon: undefined }, saving: false, saved: false,
+        error: null, versionReview: null,
+      },
+    }
+    const view = render(<ExpertPanel {...panelProps(base)} />)
+    expect(screen.getByRole('button', { name: '保存智能体' })).toHaveProperty('disabled', true)
+
+    const changed: ExpertUiState = {
+      ...base,
+      editor: {
+        ...base.editor as Extract<ExpertUiState['editor'], { kind: 'edit' }>,
+        draft: { ...document, welcome: 'Welcome back.', icon: undefined },
+      },
+    }
+    view.rerender(<ExpertPanel {...panelProps(changed)} />)
+    expect(screen.getByRole('button', { name: '保存智能体' })).toHaveProperty('disabled', false)
+
+    const saved: ExpertUiState = {
+      ...base,
+      editor: {
+        ...base.editor as Extract<ExpertUiState['editor'], { kind: 'edit' }>,
+        document: { ...document, welcome: 'Welcome back.', updatedAt: 2 },
+        draft: { ...document, welcome: 'Welcome back.', icon: undefined },
+        saved: true,
+      },
+    }
+    view.rerender(<ExpertPanel {...panelProps(saved)} />)
+    expect(screen.getByRole('button', { name: '已保存' })).toHaveProperty('disabled', true)
   })
 
   it('renders loading and failed version reviews with working navigation', () => {
@@ -310,13 +357,13 @@ describe('expert panel', () => {
     const loading: ExpertUiState = {
       ...base,
       editor: {
-        kind: 'edit', document, draft: { ...document, icon: undefined }, saving: false, error: null,
+        kind: 'edit', document, draft: { ...document, icon: undefined }, saving: false, saved: false, error: null,
         versionReview: { status: 'loading', version: 2 },
       },
     }
     const view = render(<ExpertPanel {...panelProps(loading, { closeVersion, openVersion })} />)
     expect(screen.getByRole('status').textContent).toContain('正在加载版本…')
-    fireEvent.click(screen.getByRole('button', { name: '返回专家编辑页' }))
+    fireEvent.click(screen.getByRole('button', { name: '返回智能体编辑页' }))
     expect(closeVersion).toHaveBeenCalledTimes(1)
 
     const failed: ExpertUiState = {
@@ -341,7 +388,7 @@ describe('expert panel', () => {
           versions: [{ version: 1, createdAt: 1, summary: 'Initial', changes: [] }],
         },
         draft: { id: 'expert-1', name: 'Expert', welcome: '', prompt: 'First prompt', icon: undefined },
-        saving: false, error: null,
+        saving: false, saved: false, error: null,
         versionReview: {
           status: 'ready', comparison: {
             version: { version: 1, createdAt: 1, summary: 'Initial', changes: [] },
@@ -363,14 +410,14 @@ describe('expert panel', () => {
       status: 'loading', error: null, authorable: false, experts: [], editor: { kind: 'list' }, optimizations: new Map(),
     }
     const view = render(<ExpertPanel {...panelProps(loading, { load, beginCreate, beginEdit })} />)
-    expect(screen.getByRole('status').textContent).toContain('正在加载专家…')
-    expect(screen.getByRole('button', { name: '新增专家' })).toHaveProperty('disabled', true)
+    expect(screen.getByRole('status').textContent).toContain('正在加载智能体…')
+    expect(screen.getByRole('button', { name: '新增智能体' })).toHaveProperty('disabled', true)
 
     const empty: ExpertUiState = { ...loading, status: 'ready', error: null, authorable: true }
     view.rerender(<ExpertPanel {...panelProps(empty, { load, beginCreate, beginEdit })} />)
-    expect(screen.getByText('还没有专家')).toBeTruthy()
+    expect(screen.getByText('还没有智能体')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: '重试' }))
-    fireEvent.click(screen.getByRole('button', { name: '新增专家' }))
+    fireEvent.click(screen.getByRole('button', { name: '新增智能体' }))
     expect(beginCreate).toHaveBeenCalledTimes(1)
 
     const ready: ExpertUiState = {
@@ -469,6 +516,6 @@ describe('expert panel', () => {
       editor: { kind: 'loading', id: 'expert-1' }, optimizations: new Map(),
     }
     render(<ExpertPanel {...panelProps(state)} />)
-    expect(screen.getByRole('status').textContent).toContain('正在加载专家…')
+    expect(screen.getByRole('status').textContent).toContain('正在加载智能体…')
   })
 })

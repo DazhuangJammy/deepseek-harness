@@ -30,12 +30,19 @@ export type ExpertVersionReviewState =
 export type ExpertEditorState =
   | { readonly kind: 'list' }
   | { readonly kind: 'loading'; readonly id: string }
-  | { readonly kind: 'create'; readonly draft: ExpertDraft; readonly saving: boolean; readonly error: string | null }
+  | {
+    readonly kind: 'create'
+    readonly draft: ExpertDraft
+    readonly saving: boolean
+    readonly saved: boolean
+    readonly error: string | null
+  }
   | {
     readonly kind: 'edit'
     readonly document: ExpertDocument
     readonly draft: ExpertDraft
     readonly saving: boolean
+    readonly saved: boolean
     readonly error: string | null
     readonly versionReview: ExpertVersionReviewState | null
   }
@@ -80,6 +87,19 @@ function draftOf(document: ExpertDocument): ExpertDraft {
     prompt: document.prompt,
     icon: document.icon,
   }
+}
+
+/**
+ * Compare editable fields with the last committed expert document.
+ * @param document - last document returned by the Host.
+ * @param draft - current browser draft.
+ * @returns whether saving would persist at least one changed field.
+ */
+export function expertDraftChanged(document: ExpertDocument, draft: ExpertDraft): boolean {
+  return draft.name !== document.name
+    || draft.welcome !== document.welcome
+    || draft.prompt !== document.prompt
+    || draft.icon !== document.icon
 }
 
 /** One root controller shared by the picker, welcome row, action, and Sidebar tab. */
@@ -181,6 +201,7 @@ export class ExpertUiController {
         kind: 'create',
         draft: { id: `expert-${globalThis.crypto.randomUUID()}`, name: '', welcome: '', prompt: '', icon: undefined },
         saving: false,
+        saved: false,
         error: null,
       },
     })
@@ -205,6 +226,7 @@ export class ExpertUiController {
         document: result.value,
         draft: draftOf(result.value),
         saving: false,
+        saved: false,
         error: null,
         versionReview: null,
       },
@@ -247,7 +269,7 @@ export class ExpertUiController {
   patchDraft(patch: Partial<ExpertDraft>): void {
     const editor = this.store.getSnapshot().editor
     if (editor.kind !== 'create' && editor.kind !== 'edit') return
-    this.set({ editor: { ...editor, draft: { ...editor.draft, ...patch }, error: null } })
+    this.set({ editor: { ...editor, draft: { ...editor.draft, ...patch }, saved: false, error: null } })
   }
 
   /**
@@ -257,7 +279,8 @@ export class ExpertUiController {
   async save(sessionId: SessionId): Promise<void> {
     const editor = this.store.getSnapshot().editor
     if (editor.kind !== 'create' && editor.kind !== 'edit') return
-    this.set({ editor: { ...editor, saving: true, error: null } })
+    if (editor.saving || (editor.kind === 'edit' && !expertDraftChanged(editor.document, editor.draft))) return
+    this.set({ editor: { ...editor, saving: true, saved: false, error: null } })
     const { draft } = editor
     const result = editor.kind === 'create'
       ? await this.ctx.remote.agentPresets.createExpert(
@@ -276,13 +299,15 @@ export class ExpertUiController {
       const document = result.value
       this.set({
         editor: {
-          kind: 'edit', document, draft: draftOf(document), saving: false, error: null, versionReview: null,
+          kind: 'edit', document, draft: draftOf(document), saving: false, saved: true, error: null, versionReview: null,
         },
       })
       await this.load()
     } else {
       const current = this.store.getSnapshot().editor
-      if (current.kind === editor.kind) this.set({ editor: { ...current, saving: false, error: result.error.message } })
+      if (current.kind === editor.kind) {
+        this.set({ editor: { ...current, saving: false, saved: false, error: result.error.message } })
+      }
     }
   }
 

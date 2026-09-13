@@ -1,0 +1,15 @@
+# Opt-in Desktop packager layer. Install it into a profile with
+# `dsh plugin --profile <name> add link:<checkout>/packages/experimental/desktop-packager-web-profile`
+# to add the Settings → Plugins "Desktop" tab and the /desktop command, both
+# running the repository's own unsigned packaging script.
+#
+# The desktop-packager row accepts `repositoryRoot` (defaults to the Host
+# process working directory), `appId`, `electronMirror`, `target`, and
+# `logTailChars` under `config:`.
+
+- insert:
+    - id: desktop-packager
+      name: '@deepseek-ai/dsh-experimental-desktop-packager'
+
+    - id: ui-desktop-packager
+      name: '@deepseek-ai/dsh-experimental-client-ui-desktop-packager'

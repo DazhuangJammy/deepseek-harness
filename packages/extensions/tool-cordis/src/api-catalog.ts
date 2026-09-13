@@ -886,6 +886,37 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'desktopPackager',
+    summary: 'Desktop packaging runner over one repository checkout.',
+    description: 'Desktop packaging runner over one repository checkout.',
+    methods: [
+      {
+        signature: '@Remote(\'status\') status(): DesktopPackagerStatus',
+        description: 'Status of the running or last build, with its output tail drained up to now.',
+        parameters: [],
+        returns: 'the current phase, stage, retained tail, and any installer or failure.',
+      },
+      {
+        signature: '@Remote(\'start\') start(): DesktopPackagerStartResult',
+        description: 'Start one packaging build, or refuse with the configuration to correct.',
+        parameters: [],
+        returns: 'the accepted build\'s status, or the refusal class and its reason.',
+      },
+      {
+        signature: '@Remote(\'cancel\') cancel(): DesktopPackagerStatus',
+        description: 'Terminate the running build; the phase becomes `cancelled` once it settles.',
+        parameters: [],
+        returns: 'the status after the termination request, unchanged when no build runs.',
+      },
+      {
+        signature: '@Remote(\'reveal\') async reveal(): Promise<DesktopPackagerRevealResult>',
+        description: 'Reveal the last produced installer, or this target\'s artifact directory, in this machine\'s file manager.',
+        parameters: [],
+        returns: 'success, or the reason nothing could be revealed.',
+      },
+    ],
+  },
+  {
     key: 'directoryPicker',
     summary: 'Abstract directory-picking service.',
     description: 'Abstract directory-picking service. Subclass, implement `capability()`, and load the subclass as a plugin — it registers as `ctx.directoryPicker` (one implementation per context; loading a second throws, cordis\' standard duplicate-service behavior). The capability object must be stable for the service lifetime: consumers may capture it across calls.',
@@ -4138,6 +4169,30 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'DeepSeekLlmApiJson',
     declaration: 'export type DeepSeekLlmApiJson = null | boolean | number | string | DeepSeekLlmApiJson[] | {\n    [key: string]: DeepSeekLlmApiJson;\n};',
+  },
+  {
+    name: 'DesktopPackagerPhase',
+    declaration: 'export type DesktopPackagerPhase = \'idle\' | \'running\' | \'succeeded\' | \'failed\' | \'cancelled\';',
+  },
+  {
+    name: 'DesktopPackagerRejection',
+    declaration: 'export interface DesktopPackagerRejection {\n    readonly code: \'busy\' | \'unsupported-target\' | \'repository-missing\' | \'spawn-failed\';\n    readonly message: string;\n}',
+  },
+  {
+    name: 'DesktopPackagerRevealResult',
+    declaration: 'export type DesktopPackagerRevealResult = {\n    readonly ok: true;\n} | {\n    readonly ok: false;\n    readonly error: string;\n};',
+  },
+  {
+    name: 'DesktopPackagerStage',
+    declaration: 'export type DesktopPackagerStage = \'idle\' | \'build\' | \'packages\' | \'runtime\' | \'dependencies\' | \'installer\' | \'finished\';',
+  },
+  {
+    name: 'DesktopPackagerStartResult',
+    declaration: 'export type DesktopPackagerStartResult = {\n    readonly ok: true;\n    readonly status: DesktopPackagerStatus;\n} | {\n    readonly ok: false;\n    readonly error: DesktopPackagerRejection;\n};',
+  },
+  {
+    name: 'DesktopPackagerStatus',
+    declaration: 'export interface DesktopPackagerStatus {\n    readonly phase: DesktopPackagerPhase;\n    readonly stage: DesktopPackagerStage;\n    readonly target: string;\n    readonly repositoryRoot: string;\n    readonly command: string;\n    readonly electronMirror?: string;\n    readonly startedAt?: number;\n    readonly finishedAt?: number;\n    readonly log: string;\n    readonly artifactPath?: string;\n    readonly artifactBytes?: number;\n    readonly error?: string;\n}',
   },
   {
     name: 'DiffCallView',

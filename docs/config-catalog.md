@@ -669,6 +669,36 @@ export interface Config {
 
 Source: [`packages/experimental/code-runtime-python/src/index.ts:42`](../packages/experimental/code-runtime-python/src/index.ts)
 
+<a id="deepseek-aidsh-experimental-desktop-packager"></a>
+
+## `@deepseek-ai/dsh-experimental-desktop-packager`
+
+Requires: `subprocess`
+
+```ts config-catalog
+/** Deployment-selected packaging inputs. */
+export interface Config {
+  /**
+   * Repository root holding `apps/desktop`, whose packaging script runs.
+   * Defaults to the Host process's working directory.
+   */
+  readonly repositoryRoot?: string
+  /** Reverse-DNS application identifier passed to the packaging pipeline. @default 'com.deepseek.harness.desktop' */
+  readonly appId?: string
+  /**
+   * Electron mirror forwarded as `ELECTRON_MIRROR` to the packaging pipeline.
+   * Required where the default Electron download host is unreachable.
+   */
+  readonly electronMirror?: string
+  /** Fixed packaging target. @default 'mac-arm64' */
+  readonly target?: string
+  /** Retained output-tail characters reported to the browser. @default 32768 */
+  readonly logTailChars?: number
+}
+```
+
+Source: [`packages/experimental/desktop-packager/src/types.ts:69`](../packages/experimental/desktop-packager/src/types.ts)
+
 <a id="deepseek-aidsh-experimental-inspector"></a>
 
 ## `@deepseek-ai/dsh-experimental-inspector`
@@ -3520,6 +3550,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@deepseek-ai/dsh-cordis-client-runner` ([`packages/extensions/cordis-client-runner/src/index.ts`](../packages/extensions/cordis-client-runner/src/index.ts))
 - `@deepseek-ai/dsh-deepseek-llm-api-extensions` ([`packages/llm/deepseek-llm-api-extensions/src/index.ts`](../packages/llm/deepseek-llm-api-extensions/src/index.ts))
 - `@deepseek-ai/dsh-experimental-client-ui-agent-team` ([`packages/experimental/client-ui-agent-team/src/index.ts`](../packages/experimental/client-ui-agent-team/src/index.ts))
+- `@deepseek-ai/dsh-experimental-client-ui-desktop-packager` ([`packages/experimental/client-ui-desktop-packager/src/index.ts`](../packages/experimental/client-ui-desktop-packager/src/index.ts))
 - `@deepseek-ai/dsh-fs-e2b` — requires `e2b` ([`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts))
 - `@deepseek-ai/dsh-fs-observation-policy` ([`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts))
 - `@deepseek-ai/dsh-goal-round-driver` — requires `agents` · `goals` · `sessions` ([`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts))
@@ -3589,6 +3620,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@deepseek-ai/dsh-deque` ([`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts))
 - `@deepseek-ai/dsh-experimental-agent-team-profile` ([`packages/experimental/agent-team-profile/src/index.ts`](../packages/experimental/agent-team-profile/src/index.ts))
 - `@deepseek-ai/dsh-experimental-agent-team-web-profile` ([`packages/experimental/agent-team-web-profile/src/index.ts`](../packages/experimental/agent-team-web-profile/src/index.ts))
+- `@deepseek-ai/dsh-experimental-desktop-packager-web-profile` ([`packages/experimental/desktop-packager-web-profile/src/index.ts`](../packages/experimental/desktop-packager-web-profile/src/index.ts))
 - `@deepseek-ai/dsh-experimental-webworker-packer` ([`packages/experimental/webworker-packer/src/index.ts`](../packages/experimental/webworker-packer/src/index.ts))
 - `@deepseek-ai/dsh-experimental-webworker-runtime` ([`packages/experimental/webworker-runtime/src/index.ts`](../packages/experimental/webworker-runtime/src/index.ts))
 - `@deepseek-ai/dsh-home-paths` ([`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts))

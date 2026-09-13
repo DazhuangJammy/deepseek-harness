@@ -28,6 +28,9 @@ kind: "package-group"
 | [`agent-team`](agent-team/README.zh.md) | 具名 teammate，成员之间持久消息与共享任务板 | `ctx.agentTeams` |
 | [`agent-team-web-profile`](agent-team-web-profile/README.zh.md) | Agent Teams 的公开 opt-in Web 层 | — |
 | [`client-ui-agent-team`](client-ui-agent-team/README.zh.md) | Web Team roster、任务板与 teammate 导航 | — |
+| [`desktop-packager`](desktop-packager/README.zh.md) | 宿主侧运行器：执行一次由人发起的免签名桌面版打包构建 | `ctx.desktopPackager` |
+| [`desktop-packager-web-profile`](desktop-packager-web-profile/README.zh.md) | 挂载桌面版打包宿主服务与浏览器界面的 opt-in Web 层 | — |
+| [`client-ui-desktop-packager`](client-ui-desktop-packager/README.zh.md) | Web 端的桌面版打包设置 tab 与 `/desktop` 命令 | — |
 | [`code-runtime-python`](code-runtime-python/README.zh.md) | 代码执行 seam 的 CPython 子进程后端 | `ctx.codeRuntime` |
 | [`inspector`](inspector/README.zh.md) | 用于 Host 调试、Client Runtime 检查、网络采集与 Cordis 树的跨 realm CDP hub | `ctx.inspector` |
 | [`tool-agent-team`](tool-agent-team/README.zh.md) | 让模型创建、发消息与协调 teammate 的九个工具 | 按作用域注册工具到 `ctx.tools` |

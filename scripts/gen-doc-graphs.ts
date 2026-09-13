@@ -578,6 +578,14 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route.',
   },
   {
+    key: 'desktopPackager',
+    pkg: 'experimental-desktop-packager',
+    title: 'Opt-in Desktop packaging runner',
+    mode: 'core',
+    consumers: ['experimental-desktop-packager-web-profile', 'experimental-client-ui-desktop-packager'],
+    note: 'Runs one human-initiated unsigned Desktop build through the subprocess seam and reports its phase, stage, retained output tail, cancellation, and produced installer; the web profile mounts the Host service and the browser tab and command that drive it.',
+  },
+  {
     key: 'agentTeams',
     pkg: 'experimental-agent-team',
     title: 'Agent Teams coordination domain',

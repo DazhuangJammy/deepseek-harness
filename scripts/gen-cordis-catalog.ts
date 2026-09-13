@@ -66,6 +66,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   codeRuntime: 'code-runtime.md',
   commands: 'commands.md',
   compaction: 'compaction.md',
+  desktopPackager: 'desktop-packager.md',
   cordisInspect: 'extensions.md',
   authorization: 'credentials.md',
   credentials: 'credentials.md',
@@ -756,6 +757,9 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   LocaleDict: 'service-local dictionary fields are owned by packages/client/i18n/src/index.ts',
   ThemeTokens: 'service-local token dictionary is owned by packages/client/ui-theme/src/index.ts',
   Translate: 'service-local bound translator is owned by packages/client/i18n/src/index.ts',
+  DesktopPackagerStatus: 'packager build status is owned by packages/experimental/desktop-packager/README.md',
+  DesktopPackagerStartResult: 'packager start outcome is owned by packages/experimental/desktop-packager/README.md',
+  DesktopPackagerRevealResult: 'packager reveal outcome is owned by packages/experimental/desktop-packager/README.md',
   WebUpgradeRoute:
     'upgrade route registration contract is owned by packages/host/webserver/src/index.ts',
   InvariantRegistration: 'service-local lifecycle handle is owned by packages/runtime-diagnostics/invariants/README.md',

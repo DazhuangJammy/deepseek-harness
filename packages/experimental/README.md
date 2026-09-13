@@ -28,6 +28,9 @@ The experimental group contains prototype capabilities whose contracts can chang
 | [`agent-team`](agent-team/README.md) | Named teammates with durable messages and a shared task board | `ctx.agentTeams` |
 | [`agent-team-web-profile`](agent-team-web-profile/README.md) | Published opt-in Web layer for Agent Teams | — |
 | [`client-ui-agent-team`](client-ui-agent-team/README.md) | Team roster, task board, and teammate navigation for Web | — |
+| [`desktop-packager`](desktop-packager/README.md) | Host-side runner for one human-initiated unsigned Desktop packaging build | `ctx.desktopPackager` |
+| [`desktop-packager-web-profile`](desktop-packager-web-profile/README.md) | Opt-in Web layer mounting the Desktop packager Host service and browser surfaces | — |
+| [`client-ui-desktop-packager`](client-ui-desktop-packager/README.md) | Desktop packager Settings tab and `/desktop` command for Web | — |
 | [`code-runtime-python`](code-runtime-python/README.md) | CPython subprocess backend for the code-execution seam | `ctx.codeRuntime` |
 | [`inspector`](inspector/README.md) | Cross-realm CDP hub for Host debugging, Client Runtime inspection, network capture, and Cordis trees | `ctx.inspector` |
 | [`tool-agent-team`](tool-agent-team/README.md) | Nine tools that let the model create, message, and coordinate teammates | registers scoped tools on `ctx.tools` |

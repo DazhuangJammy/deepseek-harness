@@ -12,6 +12,7 @@ export interface DesktopElectronBuilderConfig {
   readonly mac: {
     readonly identity: string | undefined
     readonly forceCodeSigning: boolean
+    readonly hardenedRuntime: boolean
     readonly notarize: boolean
     readonly signIgnore: readonly string[]
   }
@@ -22,7 +23,7 @@ export interface DesktopElectronBuilderConfig {
   readonly nsis: {
     readonly include: string
   }
-  readonly artifactBuildCompleted: (artifact: { readonly file: string }) => Promise<void> | undefined
+  readonly artifactBuildCompleted: ((artifact: { readonly file: string }) => Promise<void> | undefined) | undefined
   readonly publish: readonly [{ readonly provider: 'generic', readonly url: string }] | null
 }
 

@@ -34,11 +34,14 @@ export function createElectronBuilderConfig(
     throw new Error('desktop package: DSH_DESKTOP_UNSIGNED must be 0 or 1')
   }
   const unsigned = env.DSH_DESKTOP_UNSIGNED === '1'
-  if (unsigned && resolvedPlatform !== 'win32') throw new Error('desktop package: unsigned builds require Windows')
   const packagesMacOS = targetPlatform === 'darwin' || (targetPlatform === undefined && hostPlatform === 'darwin')
   const packagesWindows = targetPlatform === 'win32'
-  const macOSSigning = packagesMacOS ? resolveMacOSSigningEnvironment(env) : undefined
-  if (packagesMacOS) resolveMacOSNotarizationEnvironment(env)
+  if (unsigned && !packagesMacOS && !packagesWindows) {
+    throw new Error('desktop package: unsigned builds require a macOS or Windows target')
+  }
+  // An unsigned macOS build carries no certificate, so it needs neither a signing identity nor notary credentials.
+  const macOSSigning = packagesMacOS && !unsigned ? resolveMacOSSigningEnvironment(env) : undefined
+  if (packagesMacOS && !unsigned) resolveMacOSNotarizationEnvironment(env)
   const windowsSigner = packagesWindows && !unsigned
     ? createWindowsTokenSigner({
         certificateFile: env.DSH_DESKTOP_WINDOWS_CER_FILE,
@@ -72,16 +75,22 @@ export function createElectronBuilderConfig(
     ],
     mac: {
       category: 'public.app-category.developer-tools',
-      identity: macOSSigning?.signingIdentity,
+      // An unsigned local build is still signed ad-hoc: macOS reports a
+      // quarantined bundle that carries only Electron's linker signature as
+      // damaged instead of offering to open it.
+      identity: unsigned ? '-' : macOSSigning?.signingIdentity,
       forceCodeSigning: true,
-      hardenedRuntime: true,
-      // Native runtime files are pre-signed; PAK resources are sealed by their enclosing bundle.
-      signIgnore: ['/Contents/Resources/dsh(?:/|$)', '\\.pak$'],
-      notarize: true,
+      hardenedRuntime: !unsigned,
+      // Pre-signed native runtime files keep their own signatures; re-signing
+      // them ad-hoc leaves binaries the kernel refuses to execute.
+      signIgnore: unsigned
+        ? ['/Contents/Resources/(?:dsh|runtime)(?:/|$)', '\\.pak$']
+        : ['/Contents/Resources/dsh(?:/|$)', '\\.pak$'],
+      notarize: !unsigned,
       target: ['dmg', 'zip'],
     },
     dmg: {
-      sign: true,
+      sign: !unsigned,
       writeUpdateInfo: false,
     },
     afterPack: async context => {
@@ -94,9 +103,10 @@ export function createElectronBuilderConfig(
       const { verifyDesktopRuntime } = await import('./lib/types/runtime-tree.js')
       await verifyDesktopRuntime(join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`, 'Contents', 'Resources', 'dsh'),
         context.packager.appInfo.version, { platform: 'darwin', arch: resolvedArch })
+      if (unsigned) return
       verifyMacOSSignatureAfterSign(context, macOSSigning ?? resolveMacOSSigningEnvironment(env))
     },
-    artifactBuildCompleted: artifact => {
+    artifactBuildCompleted: unsigned ? undefined : artifact => {
       if (!artifact.file.endsWith('.dmg')) return
       return notarizeMacOSDiskImageArtifact(
         artifact,

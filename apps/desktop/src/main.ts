@@ -447,6 +447,19 @@ async function main(): Promise<void> {
       { type: 'separator' },
       { role: 'quit' },
     ],
+  }, {
+    // macOS routes the standard editing shortcuts through menu roles; without
+    // them the renderer's text fields receive no copy, paste, or select-all.
+    label: messages.editMenu,
+    submenu: [
+      { label: messages.undoMenu, role: 'undo' },
+      { label: messages.redoMenu, role: 'redo' },
+      { type: 'separator' },
+      { label: messages.cutMenu, role: 'cut' },
+      { label: messages.copyMenu, role: 'copy' },
+      { label: messages.pasteMenu, role: 'paste' },
+      { label: messages.selectAllMenu, role: 'selectAll' },
+    ],
   }]))
 
   const createMainWindow = (): BrowserWindow => {

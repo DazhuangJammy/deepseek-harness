@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-12-desktop-edit-menu-roles.md
+2026-09-12-desktop-edit-menu-roles.md: d051aa3f6f21ddb5b664957e8c0b364a20de03c3
+2026-09-12-desktop-edit-menu-roles.zh.md: 0a1e92a6fb3658e4a8eab24f98dc40e7603219fc

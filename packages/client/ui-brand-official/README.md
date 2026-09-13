@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-This package gives an `official` client build the DeepSeek Harness mark and name in the sidebar. Other build profiles keep the shell's fish mark and local-build label, while the conversation hero always uses the animated fish. Choose it for deployments branded as DeepSeek Harness; deployments with another identity should provide a replacement brand package. It has no runtime state and does not affect model requests.
+This package gives the product a configurable brand. Settings → Plugins exposes an enabled flag, name, icon URL, and local image upload; the selected icon appears in both the sidebar and new-session hero. Disabled or empty values keep each surface's existing fallback. The settings are durable and do not affect model requests.
 
 ## Table of Contents
 
@@ -25,15 +25,15 @@ This package gives an `official` client build the DeepSeek Harness mark and name
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this plugin in the browser roster of a deployment whose identity is DeepSeek's own, then build the client with the `official` profile so the occupants register.
+Mount this plugin in the browser roster. The assembled Web client reads its durable settings section at runtime.
 
 ### Choosing the profile
 
-`DSH_CLIENT_BUILD_PROFILE` selects which brand renders. An `official` build shows the official mark and name in the sidebar; any other value leaves the shell fallbacks — the fish mark and the local-build label — in place. The conversation hero shows the animated hero fish from `dsh-client-ui-conversation` regardless of profile, because that fallback is already the official mark. The plugin still loads and validates in both cases; only the registration is profile-gated.
+`DSH_CLIENT_BUILD_PROFILE=official` keeps the shipped mark and name in the sidebar without any configured value, which is the profile the official build ships. Any other value leaves each brand slot to its declaring package until the settings carry a value for that surface, so a local build keeps its own mark, build label, and version.
 
 ### Replacing the brand
 
-A deployment with its own identity leaves this package out and composes another package that occupies the sidebar slots — and the hero slot, which this package leaves on its fallback. Occupying a slot is the only composition route; there is no brand configuration surface here.
+A deployment with its own identity can leave this package out and compose another package that occupies the brand slots. When mounted, use Settings → Plugins → Interface branding to change the name and shared sidebar/hero icon, toggle it, upload an image, or restore defaults.
 
 -----
 

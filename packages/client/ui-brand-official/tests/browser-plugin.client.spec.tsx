@@ -17,7 +17,7 @@ const HOLES = [
   'sidebar.brand.name',
 ] as const
 
-const HERO_HOLE = 'conversation.hero.brand.mark'
+const HERO_HOLES = ['conversation.hero.brand.mark', 'conversation.hero.brand.name'] as const
 
 async function bench(declare = true) {
   const ctx = new Context()
@@ -25,7 +25,7 @@ async function bench(declare = true) {
   const slots = ctx.get('slots') as SlotRegistry
   const declareHoles = () => slots.register({
     name: 'root',
-    children: Object.fromEntries([...HOLES, HERO_HOLE].map(name => [name, { kind: 'single', scope: 'root' }])),
+    children: Object.fromEntries([...HOLES, ...HERO_HOLES].map(name => [name, { kind: 'single', scope: 'root' }])),
   } as never, () => null)
   const disposeHoles = declare ? declareHoles() : undefined
   return { ctx, slots, declareHoles, disposeHoles }
@@ -75,7 +75,7 @@ describe('official browser-brand plugin', () => {
     vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 'official')
     const subject = await bench()
     await subject.ctx.plugin({ inject: [...inject], apply }).await()
-    expect(subject.slots.entries(HERO_HOLE)).toHaveLength(0)
+    for (const hole of HERO_HOLES) expect(subject.slots.entries(hole)).toHaveLength(0)
   })
 
   it('renders the official name independently from both requested mark sizes', () => {

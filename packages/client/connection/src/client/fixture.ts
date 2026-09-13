@@ -3249,7 +3249,8 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           details: { sessionId },
         })
       }
-      let cut = boundary.seq + 1
+      // Cut from the matched event's position; sequence values are not array indexes here either.
+      let cut = log.indexOf(boundary) + 1
       while (cut < log.length && log[cut]?.type !== 'turn/start') cut++
       const child: FixtureSessionSummary = {
         sessionId: sid(`fx-${nextSession++}`), updatedAt: Date.now(), running: false, blank: false,

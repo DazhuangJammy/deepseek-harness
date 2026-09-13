@@ -29,12 +29,12 @@ export const QUOTA_EXCEEDED_CODE = 'QUOTA'
 
 /**
  * Canonical provider-neutral code for a response that completed normally but
- * carried no content blocks at all. Providers occasionally emit a degenerate
- * completion (a terminal stop with zero output); adapters classify it as this
- * failure instead of yielding an empty assistant message, because an empty
- * message silently ends the turn with nothing for the user or the loop to act
- * on. The attempt produced nothing durable, so retry policy treats it as safe
- * to repeat.
+ * carried no reply text or tool call. Providers occasionally emit a degenerate
+ * completion with no blocks or reasoning only; adapters classify it as this
+ * failure instead of yielding an assistant message with no answer, because it
+ * silently ends the turn with nothing for the user or the loop to act on. The
+ * attempt produced no actionable output, so retry policy treats it as safe to
+ * repeat.
  */
 export const EMPTY_RESPONSE_CODE = 'EMPTY_RESPONSE'
 

@@ -830,6 +830,21 @@ describe('toStreamChunks', () => {
     })
   })
 
+  it('lets caller cancellation override an in-stream provider error', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const error = assistant({ stopReason: 'error', errorMessage: 'provider failed' })
+    const chunks = await collect(toStreamChunks(
+      feed({ type: 'error', reason: 'error', error }),
+      undefined,
+      controller.signal,
+    ))
+    expect(chunks.at(-1)).toEqual({
+      type: 'finish',
+      reason: { kind: 'aborted', failure: { message: 'provider failed', code: 'ABORTED' } },
+    })
+  })
+
   it('rejects a stream that ends without done or error', async () => {
     await expect(collect(toStreamChunks(feed({ type: 'start', partial: assistant() }))))
       .rejects.toThrow(/without done\/error/)
@@ -873,9 +888,15 @@ describe('mapStopReason / mapUsage', () => {
     })
   })
 
-  it('keeps a thinking-only stop successful (any block counts as content)', () => {
+  it('classifies a thinking-only stop as EMPTY_RESPONSE', () => {
     expect(mapStopReason(assistant({ stopReason: 'stop', content: [{ type: 'thinking', thinking: 'mull' }] })))
-      .toEqual({ kind: 'stop' })
+      .toEqual({
+        kind: 'error',
+        failure: {
+          message: 'model "deepseek-v4-flash" returned a completed response with no content',
+          code: EMPTY_RESPONSE_CODE,
+        },
+      })
   })
 
   it('defaults the error message when pi-ai omits it', () => {

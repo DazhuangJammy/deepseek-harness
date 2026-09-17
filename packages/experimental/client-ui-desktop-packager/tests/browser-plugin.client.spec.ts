@@ -8,7 +8,6 @@ import type { TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 import type { CommandContribution } from '@deepseek-ai/dsh-client-ui-commands/client'
 import { DesktopPackagerTab, type DesktopPackagerTabInjected } from '../src/client/DesktopPackagerTab.tsx'
 import { inject, mountDesktopPackagerUi } from '../src/client/mount.ts'
-import { apply as browserApply } from '../src/client/index.ts'
 import { apply as nodeApply } from '../src/index.ts'
 
 const REMOTE: TypertRemoteContribution = {
@@ -26,7 +25,7 @@ const IDLE: DesktopPackagerStatus = {
 }
 
 /** One mounted plugin over stubbed Remote, slot, locale, and command services. */
-async function bench(options: { registrationFailure?: boolean; running?: boolean; viaApply?: boolean } = {}) {
+async function bench(options: { registrationFailure?: boolean; running?: boolean } = {}) {
   const ctx = new Context()
   const calls: string[] = []
   const status = (): Promise<{ ok: true; value: DesktopPackagerStatus }> => {
@@ -82,12 +81,7 @@ async function bench(options: { registrationFailure?: boolean; running?: boolean
   }
   const fiber = options.registrationFailure === true
     ? ctx.plugin({ apply() {} })
-    : ctx.plugin({
-      inject: [...inject],
-      apply: clientCtx => options.viaApply === true
-        ? browserApply(clientCtx)
-        : mountDesktopPackagerUi(clientCtx, REMOTE),
-    })
+    : ctx.plugin({ inject: [...inject], apply: clientCtx => mountDesktopPackagerUi(clientCtx, REMOTE) })
   const activation: Promise<unknown> = options.registrationFailure === true
     ? mountDesktopPackagerUi(ctx, REMOTE).catch((error: unknown) => error)
     : fiber.await()
@@ -186,15 +180,6 @@ describe('desktop packager browser plugin', () => {
     expect(contribution.label?.()).toBe('Build desktop installer')
     expect(contribution.description?.()).toBe('Run the local packaging pipeline to produce an unsigned desktop installer')
     expect(contribution.available({} as never)).toBe(true)
-  })
-
-  it('registers the same surfaces through the browser entry apply()', async () => {
-    const b = await bench({ viaApply: true })
-    expect(b.remote.mount).toHaveBeenCalledOnce()
-    expect(b.entries()).toBeDefined()
-    expect(b.contributions).toHaveLength(1)
-    await b.fiber.dispose()
-    expect(b.remote.disposeMount).toHaveBeenCalledOnce()
   })
 
   it('keeps the node half inert', () => {

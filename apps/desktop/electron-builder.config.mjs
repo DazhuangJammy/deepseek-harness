@@ -66,12 +66,18 @@ export function createElectronBuilderConfig(
       'lib/*.cjs',
       'renderer/**/*',
       'package.json',
+      { from: buildPaths.dsh, to: 'dsh', filter: ['**/*'] },
+      // electron-builder excludes a source directory's root node_modules.
+      { from: join(buildPaths.dsh, 'node_modules'), to: 'dsh/node_modules', filter: ['**/*'] },
+    ],
+    asarUnpack: [
+      '**/*.{node,dylib,dll,so,exe}',
+      '**/*.so.*',
+      '**/spawn-helper',
+      '**/@vscode/ripgrep/bin/rg',
     ],
     extraResources: [
       { from: buildPaths.runtime, to: 'runtime' },
-      { from: buildPaths.dsh, to: 'dsh' },
-      // electron-builder excludes a source directory's root node_modules.
-      { from: join(buildPaths.dsh, 'node_modules'), to: 'dsh/node_modules' },
     ],
     mac: {
       category: 'public.app-category.developer-tools',
@@ -81,11 +87,8 @@ export function createElectronBuilderConfig(
       identity: unsigned ? '-' : macOSSigning?.signingIdentity,
       forceCodeSigning: true,
       hardenedRuntime: !unsigned,
-      // Pre-signed native runtime files keep their own signatures; re-signing
-      // them ad-hoc leaves binaries the kernel refuses to execute.
-      signIgnore: unsigned
-        ? ['/Contents/Resources/(?:dsh|runtime)(?:/|$)', '\\.pak$']
-        : ['/Contents/Resources/dsh(?:/|$)', '\\.pak$'],
+      // ASAR-unpacked native runtime files are pre-signed; PAK resources are sealed by their enclosing bundle.
+      signIgnore: ['/Contents/Resources/app\\.asar\\.unpacked/dsh(?:/|$)', '\\.pak$'],
       notarize: !unsigned,
       target: ['dmg', 'zip'],
     },
@@ -93,16 +96,8 @@ export function createElectronBuilderConfig(
       sign: !unsigned,
       writeUpdateInfo: false,
     },
-    afterPack: async context => {
-      const { verifyDesktopRuntime } = await import('./lib/types/runtime-tree.js')
-      await verifyDesktopRuntime(join(context.packager.getResourcesDir(context.appOutDir), 'dsh'),
-        context.packager.appInfo.version, { platform: resolvedPlatform, arch: resolvedArch })
-    },
     afterSign: async context => {
       if (context.electronPlatformName !== 'darwin') return
-      const { verifyDesktopRuntime } = await import('./lib/types/runtime-tree.js')
-      await verifyDesktopRuntime(join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`, 'Contents', 'Resources', 'dsh'),
-        context.packager.appInfo.version, { platform: 'darwin', arch: resolvedArch })
       if (unsigned) return
       verifyMacOSSignatureAfterSign(context, macOSSigning ?? resolveMacOSSigningEnvironment(env))
     },

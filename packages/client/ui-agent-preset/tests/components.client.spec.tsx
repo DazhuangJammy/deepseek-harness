@@ -485,6 +485,7 @@ describe('the expert Sidebar definition', () => {
     const guide = definition.guide?.[0]
     if (guide === undefined) throw new Error('expert guide entry is absent')
     if (guide.description === undefined) throw new Error('expert guide description is absent')
+    expect(guide.id).toBe('manage')
     expect(guide.title()).toBe('expert.manage')
     expect(guide.description()).toBe('expert.manageHint')
   })

@@ -33,8 +33,8 @@ const contextBatchSnapshot = {
   ...snapshot,
   nodes: [
     snapshot.nodes[0],
-    { kind: 'context', seq: 8, time: 8, content: [{ type: 'text', text: 'runtime rules' }], source: null, provenance: { role: 'inject', label: '@deepseek-ai/dsh-system-prompt' }, form: 'snapshot' },
-    { kind: 'context', seq: 9, time: 9, content: [{ type: 'text', text: 'available skills' }], source: null, provenance: { role: 'inject', label: 'skill-catalog' }, form: 'catalog' },
+    { kind: 'context', seq: 8, time: 8, content: [{ type: 'text', text: 'runtime rules' }], source: null, producer: { role: 'inject', label: '@deepseek-ai/dsh-system-prompt' }, form: 'snapshot' },
+    { kind: 'context', seq: 9, time: 9, content: [{ type: 'text', text: 'available skills' }], source: null, producer: { role: 'inject', label: 'skill-catalog' }, form: 'catalog' },
   ],
 } as unknown as LearningFixture
 
@@ -145,14 +145,14 @@ describe('Agent Learning view', () => {
       { kind: 'user', seq: 11, time: 11, content: [] },
       { kind: 'user', seq: 111, time: 111, content: null },
       { kind: 'steering', seq: 12, time: 12, content: [] },
-      { kind: 'assistant', seq: 13, time: 13, turn: 2, step: 1, blocks: [{ kind: 'tool-call', name: 'read_file', argsRaw: '{}' }], provenance: { provider: 'deepseek', model: 'deepseek-chat' } },
+      { kind: 'assistant', seq: 13, time: 13, turn: 2, step: 1, blocks: [{ kind: 'tool-call', name: 'read_file', argsRaw: '{}' }], providerMetadata: { provider: 'deepseek', model: 'deepseek-chat' } },
       { kind: 'assistant', seq: 14, time: 14, turn: 2, step: 2, blocks: [] },
       { kind: 'tool-result', seq: 15, time: 15, callId: 'missing-call', call: null, content: [], isError: false },
       { kind: 'tool-result', seq: 16, time: 16, callId: 'failed-call', call: { name: 'write_file', argsRaw: '{"path":"x"}' }, content: [{ type: 'text', text: 'denied' }], isError: true },
       { kind: 'command', seq: 17, time: 17, name: null, args: null, outcome: null },
       { kind: 'command', seq: 18, time: 18, name: 'shell', args: '--help', outcome: { kind: 'error', text: 'bad command' } },
       { kind: 'command', seq: 19, time: 19, name: 'status', args: null, outcome: { kind: 'success', text: 'ready' } },
-      { kind: 'context', seq: 20, time: 20, content: [], provenance: { role: 'inject', label: null }, form: 'snapshot' },
+      { kind: 'context', seq: 20, time: 20, content: [], producer: { role: 'inject', label: null }, form: 'snapshot' },
       { kind: 'compaction', seq: 21, time: 21, summary: null },
       { kind: 'compaction', seq: 22, time: 22, summary: 'summary', shadowedItemCount: 4 },
       { kind: 'compaction', seq: 23, time: 23, summary: 'summary' },

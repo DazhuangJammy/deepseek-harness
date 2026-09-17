@@ -46,6 +46,7 @@ function fakeSubprocess(children: FakeChild[], failWith?: Error): (spec: Subproc
         stdin: undefined,
         stdout: undefined,
         stderr: undefined,
+        control: undefined,
         collected: { stdout: reader(() => stdout), stderr: reader(() => stderr) },
         done,
         terminate: () => { killed = true },

@@ -175,8 +175,8 @@ function recordFromNode(node: ConversationNode, t: (key: LearningKey) => string)
     case 'assistant': {
       const call = node.blocks.find(block => block.kind === 'tool-call')
       const summary = call?.kind === 'tool-call' ? `${t('record.toolCallPrefix')} ${call.name}` : textPreview(node.blocks) || t('record.fallback.model')
-      const provider = node.provenance === undefined ? t('graph.notAvailable') : `${node.provenance.provider} / ${node.provenance.model}`
-      return { id: `assistant-${node.seq}`, kind: 'model', stage: 'execution', tone: 'model', badge: 'kind.model', title: eventPosition(t, node.turn, node.step, t('event.model')), summary, observed: { input: t('graph.notAvailable'), output: summary }, seq: node.seq, turn: node.turn, step: node.step, component: observedComponent('component.llm', provider, node.provenance === undefined ? 'graph.evidence.missingComponent' : 'graph.evidence.assistantProvenance'), detail: recordDetail('model') }
+      const provider = node.providerMetadata === undefined ? t('graph.notAvailable') : `${node.providerMetadata.provider} / ${node.providerMetadata.model}`
+      return { id: `assistant-${node.seq}`, kind: 'model', stage: 'execution', tone: 'model', badge: 'kind.model', title: eventPosition(t, node.turn, node.step, t('event.model')), summary, observed: { input: t('graph.notAvailable'), output: summary }, seq: node.seq, turn: node.turn, step: node.step, component: observedComponent('component.llm', provider, node.providerMetadata === undefined ? 'graph.evidence.missingComponent' : 'graph.evidence.assistantIdentity'), detail: recordDetail('model') }
     }
     case 'tool-result': {
       const input = node.call === null ? node.callId : `${node.call.name}(${node.call.argsRaw})`
@@ -190,7 +190,7 @@ function recordFromNode(node: ConversationNode, t: (key: LearningKey) => string)
     }
     case 'context': {
       const output = textPreview(node.content) || t('record.fallback.context')
-      return { id: `context-${node.seq}`, kind: 'context', stage: 'capabilities', tone: 'system', badge: 'kind.system', title: t('event.context'), summary: node.provenance.label ?? output, observed: { input: node.provenance.label ?? t('graph.notAvailable'), output }, seq: node.seq, component: observedComponent('component.context', node.provenance.label ?? t('graph.notAvailable'), 'graph.evidence.contextProvenance'), detail: recordDetail('context') }
+      return { id: `context-${node.seq}`, kind: 'context', stage: 'capabilities', tone: 'system', badge: 'kind.system', title: t('event.context'), summary: node.producer.label ?? output, observed: { input: node.producer.label ?? t('graph.notAvailable'), output }, seq: node.seq, component: observedComponent('component.context', node.producer.label ?? t('graph.notAvailable'), 'graph.evidence.contextProducer'), detail: recordDetail('context') }
     }
     case 'compaction': {
       const output = node.summary === null ? t('record.compactionHidden') : t('record.compactionCount').replace('{count}', String(node.shadowedItemCount ?? 0))

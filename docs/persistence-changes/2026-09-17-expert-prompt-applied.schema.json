@@ -1,0 +1,111 @@
+{
+  "formatVersion": 1,
+  "roots": [
+    {
+      "key": "event:expert/prompt-applied",
+      "kind": "event",
+      "event": "expert/prompt-applied",
+      "surface": false,
+      "digest": "b0af06fa851fc7d94395555a72d0b9273cc66c7859fed70d5aff6c1b8945fbac",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 8,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 7,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 7,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 9,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "expertId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "prompt",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "source",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "version",
+                "type": 7,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "union",
+            "types": [
+              4,
+              5,
+              6
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "branch-latest"
+          },
+          {
+            "kind": "literal",
+            "value": "manual-save"
+          },
+          {
+            "kind": "literal",
+            "value": "optimization-accepted"
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "expert/prompt-applied"
+          }
+        ]
+      }
+    }
+  ],
+  "types": []
+}

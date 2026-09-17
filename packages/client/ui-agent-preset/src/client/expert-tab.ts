@@ -22,6 +22,7 @@ export function expertTabDefinition(t: TranslateNS<'settings.agentPreset'>): Sid
     priority: 'builtin',
     title: () => t('expert.tabTitle'),
     guide: [{
+      id: 'manage',
       order: 30,
       title: () => t('expert.manage'),
       description: () => t('expert.manageHint'),

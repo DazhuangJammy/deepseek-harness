@@ -30,6 +30,7 @@ import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typer
 import { bindScopeParent, createScope, scopeOf, type Scope, type ScopeKey, type ScopeParentBinding } from '@deepseek-ai/dsh-scope'
 // Type-only: resolves the `agent/created` lifecycle event this service watches.
 import type {} from '@deepseek-ai/dsh-agent'
+import type {} from '@deepseek-ai/dsh-app-boot'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { ContentBlock, UserMessage } from '@deepseek-ai/dsh-llm'
@@ -204,7 +205,6 @@ export class AgentPresets extends TypertRemoteService {
    * base here is what lets health answer the question before a session does.
    */
   private readonly harnessBase: string
-
   /**
    * The user layer over `config.default`, present only while a settings
    * provider is composed. Held rather than snapshotted so a hot-reloaded
@@ -347,7 +347,14 @@ export class AgentPresets extends TypertRemoteService {
    * @returns the presets, first-root-wins per id.
    */
   async list(): Promise<AgentPreset[]> {
-    return await discoverPresets(this.resolvedRoots, this.harnessBase)
+    const packages = this.ctx.get('pluginPackages')
+    return packages === undefined
+      ? await discoverPresets(this.resolvedRoots, this.harnessBase)
+      : await discoverPresets(
+        this.resolvedRoots,
+        this.harnessBase,
+        (specifier, base) => packages.packageOf(specifier, base) !== undefined,
+      )
   }
 
   /**

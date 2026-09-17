@@ -152,7 +152,10 @@ export function PopupSelectView({ popup, t }: PopupSelectViewProps) {
                 )
                 const content = (
                   <>
-                    <span className={css.label}>{option.label}</span>
+                    <span className={css.label}>
+                      <span className={css.labelText}>{option.label}</span>
+                      {option.badge !== undefined && <sup className={css.badge}>{option.badge}</sup>}
+                    </span>
                     {option.detail !== undefined && <span className={css.detail}>{option.detail}</span>}
                     {option.active === true && <span className={css.check}><IconCheckOutline16 /></span>}
                   </>
@@ -163,6 +166,7 @@ export function PopupSelectView({ popup, t }: PopupSelectViewProps) {
                       key={option.id}
                       role="option"
                       aria-selected={activeRow}
+                      aria-label={option.badge === undefined ? undefined : `${option.label} ${option.badge}`}
                       className={rowClass}
                       onClick={() => { void popup.select(index) }}
                       onMouseEnter={() => { popup.highlight(index) }}

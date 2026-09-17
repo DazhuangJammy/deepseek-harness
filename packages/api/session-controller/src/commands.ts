@@ -240,13 +240,7 @@ export class SessionCommandController {
         { sessionId: request.sessionId },
       )
     }
-    // Observations are normally seq-contiguous, but the array index is not an
-    // API guarantee for prepared/cold reads. Cut from the matched event's
-    // actual position so a fork can never include the next turn's user input.
-    let cut = SessionLogOffset(source.events.indexOf(boundary) + 1)
-    while (cut < source.events.length && source.events[cut]?.type !== 'turn/start') {
-      cut = SessionLogOffset(cut + 1)
-    }
+    const cut = SessionLogOffset(boundary.seq + 1)
     let workspace: Workspace | undefined
     try {
       workspace = await this.forkWorkspace(source.header)

@@ -22,8 +22,7 @@ const CHILDREN = {
   'sidebar.brand.mark': { kind: 'single', scope: 'root' },
   'sidebar.brand.name': { kind: 'single', scope: 'root' },
   'conversation.hero.brand.mark': { kind: 'single', scope: 'root' },
-  'conversation.hero.brand.name': { kind: 'single', scope: 'root' },
-  'settings.plugin.item': { kind: 'keyed', scope: 'root' },
+  'settings.plugins.tab': { kind: 'list', scope: 'root' },
 } as const
 
 interface BenchOptions {
@@ -72,7 +71,7 @@ function faceOf(slots: SlotRegistry, hole: string): BrandFace {
 
 /** The controller face, reached through the settings card every host registers. */
 function controllerFace(subject: Bench): BrandFace {
-  return faceOf(subject.slots, 'settings.plugin.item')
+  return faceOf(subject.slots, 'settings.plugins.tab')
 }
 
 /** Provide a scope binder and record the namespace each bind asked for. */
@@ -263,29 +262,22 @@ describe('ui-brand-official browser half', () => {
     await Promise.resolve()
 
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(0)
-    expect(subject.slots.entries('conversation.hero.brand.name')).toHaveLength(0)
 
     scope.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(1)
-    expect(subject.slots.entries('conversation.hero.brand.name')).toHaveLength(1)
     const heroFace = faceOf(subject.slots, 'conversation.hero.brand.mark')
     expect(heroFace.hooks.brand.getSnapshot().icon).toBe('https://x/logo.png')
-    expect(faceOf(subject.slots, 'conversation.hero.brand.name').hooks.brand.getSnapshot().name).toBe('Acme')
 
     scope.publish({ value: { enabled: true, name: 'Acme', icon: '' } })
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(0)
-    expect(subject.slots.entries('conversation.hero.brand.name')).toHaveLength(1)
 
     scope.publish({ value: { enabled: false, name: 'Acme', icon: '' } })
-    expect(subject.slots.entries('conversation.hero.brand.name')).toHaveLength(0)
 
     scope.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(1)
-    expect(subject.slots.entries('conversation.hero.brand.name')).toHaveLength(1)
 
     await fiber.dispose()
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(0)
-    expect(subject.slots.entries('conversation.hero.brand.name')).toHaveLength(0)
   })
 
   it('keeps the sidebar fallback until the official profile or a configured value asks for it', async () => {
@@ -323,7 +315,6 @@ describe('ui-brand-official browser half', () => {
     expect(subject.slots.entries('sidebar.brand.mark')).toHaveLength(1)
     expect(subject.slots.entries('sidebar.brand.name')).toHaveLength(1)
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(0)
-    expect(subject.slots.entries('conversation.hero.brand.name')).toHaveLength(0)
   })
 
   it('registers the dictionaries and the namespace-keyed settings card', async () => {
@@ -335,8 +326,8 @@ describe('ui-brand-official browser half', () => {
     await mount(subject)
 
     expect(register).toHaveBeenCalledWith('ui-brand-official', { zh, en })
-    const card = subject.slots.entries('settings.plugin.item')[0]
-    expect(card?.options.key).toBe(BRAND_SETTINGS_NAMESPACE)
+    const card = subject.slots.entries('settings.plugins.tab')[0]
+    expect(card?.options.id).toBe(BRAND_SETTINGS_NAMESPACE)
     expect(card?.locale).toBe('ui-brand-official')
     expect((card?.inject as unknown as () => BrandFace)()).toHaveProperty('hooks')
   })
@@ -348,7 +339,7 @@ describe('ui-brand-official browser half', () => {
     slots.register({ name: 'root', children: CHILDREN } as never, () => null)
     vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 'local')
     await ctx.plugin({ inject: [...inject], apply }).await()
-    for (const hole of ['sidebar.brand.mark', 'sidebar.brand.name', 'conversation.hero.brand.mark', 'settings.plugin.item']) {
+    for (const hole of ['sidebar.brand.mark', 'sidebar.brand.name', 'conversation.hero.brand.mark', 'settings.plugins.tab']) {
       expect(slots.entries(hole as never)).toHaveLength(0)
     }
   })

@@ -22,13 +22,6 @@ const GATED: SelectOption = {
     confirmLabel: 'Enable Full access',
   },
 }
-const ACTIONABLE: SelectOption = {
-  id: 'expert',
-  label: 'Interview expert',
-  detail: 'v2',
-  detailPlacement: 'inline',
-  secondaryAction: { label: 'Edit Interview expert' },
-}
 
 const SEGMENT: TokenSegment = { via: 'enter', token: '/theme' }
 
@@ -72,7 +65,37 @@ describe('open and options load', () => {
     expect(popup.state.getSnapshot()).toMatchObject({ open: true, command: 'theme', status: 'pending', search: '', submitting: false, error: null })
     release(OPTIONS)
     await Promise.resolve()
-    expect(popup.state.getSnapshot()).toMatchObject({ status: 'ready', options: OPTIONS, active: 0 })
+    // The highlight parks on the row the list marks as the current value
+    // (Light at index 1), not on the topmost row.
+    expect(popup.state.getSnapshot()).toMatchObject({ status: 'ready', options: OPTIONS, active: 1 })
+  })
+
+  it('parks the highlight on the top row when no row marks the current value', async () => {
+    const rows: SelectOption[] = [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]
+    const popup = new PopupSelectController<Ctx>(makeDeps())
+    popup.open('theme', spec({ options: () => Promise.resolve(rows) }), CTX_A, SEGMENT)
+    await Promise.resolve()
+    expect(popup.state.getSnapshot().active).toBe(0)
+  })
+
+  it('a retry re-parks the highlight inside the search text it retained', async () => {
+    let attempts = 0
+    const rows: SelectOption[] = [
+      { id: 'sun', label: 'Sun' },
+      { id: 'moon', label: 'Moon', active: true },
+      { id: 'star', label: 'Star' },
+    ]
+    const { popup } = await readyPopup({
+      options: () => {
+        attempts += 1
+        return attempts === 1 ? Promise.reject(new Error('directory down')) : Promise.resolve(rows)
+      },
+    })
+    await Promise.resolve()
+    popup.setSearch('n') // Sun, Moon — the current value sits at filtered index 1
+    popup.retry()
+    await Promise.resolve()
+    expect(popup.state.getSnapshot()).toMatchObject({ status: 'ready', search: 'n', active: 1 })
   })
 
   it('loads options exactly once: search filters locally without re-querying the provider', async () => {
@@ -154,14 +177,15 @@ describe('open and options load', () => {
 })
 
 describe('search / move / highlight over the filtered list', () => {
-  it('setSearch rebases the highlight to 0 and ignores closed shells and identical text', async () => {
+  it('setSearch rebases the highlight to the top row and ignores closed shells and identical text', async () => {
     const { popup } = await readyPopup()
+    expect(popup.state.getSnapshot().active).toBe(1) // parked on the current-value row
     popup.move(1)
-    expect(popup.state.getSnapshot().active).toBe(1)
-    popup.setSearch('s')
-    expect(popup.state.getSnapshot()).toMatchObject({ search: 's', active: 0 })
+    expect(popup.state.getSnapshot().active).toBe(2)
+    popup.setSearch('a') // Dark, Sepia
+    expect(popup.state.getSnapshot()).toMatchObject({ search: 'a', active: 0 })
     const before = popup.state.getSnapshot()
-    popup.setSearch('s')
+    popup.setSearch('a')
     expect(popup.state.getSnapshot()).toBe(before)
     const closed = new PopupSelectController<Ctx>(makeDeps())
     closed.setSearch('x')
@@ -210,37 +234,6 @@ describe('search / move / highlight over the filtered list', () => {
 })
 
 describe('select', () => {
-  it('runs a secondary action without running the row selection', async () => {
-    const onSelect = vi.fn()
-    const onSecondaryAction = vi.fn()
-    const deps = makeDeps()
-    const { popup } = await readyPopup({
-      options: () => Promise.resolve([ACTIONABLE]),
-      onSelect,
-      onSecondaryAction,
-    }, deps)
-
-    await popup.selectSecondary(0)
-
-    expect(onSecondaryAction).toHaveBeenCalledExactlyOnceWith(ACTIONABLE, CTX_A)
-    expect(onSelect).not.toHaveBeenCalled()
-    expect(deps.consume).toHaveBeenCalledExactlyOnceWith(SEGMENT)
-    expect(popup.state.getSnapshot().open).toBe(false)
-  })
-
-  it('ignores a secondary action when the option or handler does not provide one', async () => {
-    const deps = makeDeps()
-    const { popup } = await readyPopup({}, deps)
-    await popup.selectSecondary(0)
-    expect(deps.consume).not.toHaveBeenCalled()
-    expect(popup.state.getSnapshot().open).toBe(true)
-
-    const { popup: noHandler } = await readyPopup({ options: () => Promise.resolve([ACTIONABLE]) }, deps)
-    await noHandler.selectSecondary(0)
-    expect(deps.consume).not.toHaveBeenCalled()
-    expect(noHandler.state.getSnapshot().open).toBe(true)
-  })
-
   it('gates a confirmed option until acknowledgement, then settles through the original binding', async () => {
     const onSelect = vi.fn()
     const deps = makeDeps()
@@ -299,7 +292,7 @@ describe('select', () => {
     popup.setSearch('x') // locked while submitting
     popup.move(1)
     popup.highlight(1)
-    expect(popup.state.getSnapshot()).toMatchObject({ search: '', active: 0 })
+    expect(popup.state.getSnapshot()).toMatchObject({ search: '', active: 1 })
     release()
     await first
     expect(onSelect).toHaveBeenCalledTimes(1)

@@ -5,7 +5,7 @@ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import {
-  BrandSettingsCard, OfficialBrandMark, OfficialBrandName, OfficialHeroBrandMark, OfficialHeroBrandName,
+  BrandSettingsCard, OfficialBrandMark, OfficialBrandName, OfficialHeroBrandMark,
 } from '../src/client/Brand.tsx'
 import type { BrandEditorState } from '../src/client/Brand.tsx'
 import { DEFAULT_BRAND_SETTINGS } from '../src/brand-settings.ts'
@@ -156,22 +156,6 @@ describe('official brand mark and name', () => {
     expect(disabled.container.firstChild).toBeNull()
   })
 
-  it('renders the hero name only while a brand name is set', () => {
-    const bare = render(<OfficialHeroBrandName />)
-    expect(bare.container.firstChild).toBeNull()
-    bare.unmount()
-
-    const named = render(<OfficialHeroBrandName useBrand={bindSnapshotSelector(brandStoreOf({ enabled: true, name: 'Acme' }))} />)
-    expect(named.container.textContent).toBe('Acme')
-    named.unmount()
-
-    const blankName = render(<OfficialHeroBrandName useBrand={bindSnapshotSelector(brandStoreOf({ enabled: true }))} />)
-    expect(blankName.container.firstChild).toBeNull()
-    blankName.unmount()
-
-    const disabled = render(<OfficialHeroBrandName useBrand={bindSnapshotSelector(brandStoreOf({ name: 'Acme' }))} />)
-    expect(disabled.container.firstChild).toBeNull()
-  })
 })
 
 describe('BrandSettingsCard', () => {

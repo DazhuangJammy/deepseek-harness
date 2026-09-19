@@ -24,11 +24,13 @@ export interface SelectOption {
   /** Optional short marker rendered as a superscript beside the label. */
   readonly badge?: string
   readonly detail?: string
-  /** Keep detail beside the label instead of at the row's trailing edge. */
-  readonly detailPlacement?: 'inline'
+  /**
+   * The row the shell's highlight parks on when the panel opens, so an accept
+   * gesture made without looking confirms the value in use. A business package
+   * that marks a row `active` for presentation alone would make that row the
+   * default pick.
+   */
   readonly active?: boolean
-  /** Optional independently named row action, rendered after inline detail. */
-  readonly secondaryAction?: { readonly label: string }
   /** Optional in-page risk gate owned by the shared popup shell. */
   readonly confirmation?: SelectConfirmation
 }
@@ -43,8 +45,6 @@ export interface PopupSelectSpec {
   readonly kind: 'popupSelect'
   options(session: ClientSessionContext, signal: AbortSignal): Promise<readonly SelectOption[]>
   onSelect(option: SelectOption, session: ClientSessionContext): void | Promise<void>
-  /** Run one option's optional secondary action without selecting that option. */
-  onSecondaryAction?(option: SelectOption, session: ClientSessionContext): void | Promise<void>
 }
 
 /**

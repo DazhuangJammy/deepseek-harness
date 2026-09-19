@@ -113,7 +113,7 @@ function harness() {
     sidebarRightTabs: { register: () => () => {} },
     sessions: {
       list: { getSnapshot: () => ({ current: undefined, byId: {} }), subscribe: () => () => {} },
-      observeSubagent: () => Promise.resolve({}),
+      retain: () => ({ ready: Promise.resolve({}), release: () => {} }),
     },
     uiWorkspace: { startSession: vi.fn() },
   }
@@ -128,7 +128,7 @@ function registration(h: ReturnType<typeof harness>, name: string): CapturedRegi
 }
 
 describe('expert client wiring', () => {
-  it('routes menu choices and secondary actions through the expert controller', async () => {
+  it('routes menu choices through the expert controller', async () => {
     const h = harness()
     const command = h.commands.find(row => row.name === 'experts')
     if (command?.ui.kind !== 'popupSelect') throw new Error('expert popup did not register')
@@ -152,13 +152,10 @@ describe('expert client wiring', () => {
     await command.ui.onSelect({ id: 'ignored', label: 'ignored' }, session)
     await command.ui.onSelect({ id: 'select:interview', label: 'interview' }, session)
     await command.ui.onSelect({ id: 'select:reject', label: 'reject' }, session)
-    await command.ui.onSecondaryAction?.({ id: 'ignored', label: 'ignored' }, session)
-    await command.ui.onSecondaryAction?.({ id: 'select:interview', label: 'interview' }, session)
-
     expect(h.calls).toEqual(expect.arrayContaining([
-      'select:interview', 'select:reject', 'read:interview',
+      'select:interview', 'select:reject',
     ]))
-    expect(h.openedTabs.length).toBeGreaterThanOrEqual(4)
+    expect(h.openedTabs.length).toBeGreaterThanOrEqual(3)
   })
 
   it('exposes Sidebar, welcome, action, and settlement callbacks over one store', async () => {

@@ -3,7 +3,7 @@ import { BrandWordmark, Button, FishLogo, IconChevronDownOutline14, Tag } from '
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SidebarBrandMarkOwnerProps } from '@deepseek-ai/dsh-client-ui-sidebar/client'
-import type { HeroBrandMarkOwnerProps, HeroBrandNameOwnerProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { HeroBrandMarkOwnerProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { BrandSettings } from '../brand-settings.ts'
 import { DEFAULT_BRAND_SETTINGS } from '../brand-settings.ts'
 import css from './Brand.module.css'
@@ -57,17 +57,6 @@ export function OfficialHeroBrandMark({ size, className, useBrand }: HeroBrandMa
 }
 
 /**
- * Render the custom name in the new-session hero while its slot is active.
- * @param props - Empty hero owner share and the accepted brand source.
- * @returns the configured name, or null during a same-frame settings withdrawal.
- */
-export function OfficialHeroBrandName({ useBrand }: HeroBrandNameOwnerProps & BrandProps) {
-  const brand = useBrand?.(value => value) ?? DEFAULT_BRAND_SETTINGS
-  if (!brand.enabled || brand.name.trim() === '') return null
-  return <span>{brand.name}</span>
-}
-
-/**
  * Render the official name artwork without its independently slotted mark.
  * @returns the official name wordmark.
  */
@@ -102,7 +91,7 @@ export function BrandSettingsCard({ t, useBrand, useEditor, edit, save, reset }:
     reader.readAsDataURL(file)
   }
   return (
-    <li className={`${css.card}${open ? ` ${css.cardOpen}` : ''}`} aria-label={t('title')}>
+    <section className={`${css.card}${open ? ` ${css.cardOpen}` : ''}`} aria-label={t('title')}>
       <button type="button" className={css.header} aria-expanded={open} onClick={() => { setOpen(value => !value) }}>
         <span className={css.headText}>
           <span className={css.name}>{t('title')}</span>
@@ -152,7 +141,7 @@ export function BrandSettingsCard({ t, useBrand, useEditor, edit, save, reset }:
         </div>
         {!dirty && brand.enabled && <span className={css.saved} role="status">{t('saved')}</span>}
       </div>}
-    </li>
+    </section>
   )
 }
 

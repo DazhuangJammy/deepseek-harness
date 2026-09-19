@@ -21,6 +21,11 @@ const expert: ExpertDocument = {
 const proposalId = brandString<ExpertProposalId>('proposal-1')
 const childSessionId = SessionId('optimization-child')
 
+/** Session-reference double for the current explicit retain lifecycle. */
+function reference(ready: Promise<unknown> = Promise.resolve({})) {
+  return { ready, release: () => {} }
+}
+
 function optimizationOutcome(
   messageId: MessageId,
   current: ExpertDocument = expert,
@@ -93,7 +98,7 @@ function fakeContext() {
     },
   }
   const sessions = {
-    observeSubagent: () => Promise.resolve({}),
+    retain: () => reference(),
   }
   return { ctx: { remote: { agentPresets }, sessions } as unknown as ClientContext, calls }
 }
@@ -227,7 +232,7 @@ describe('expert UI controller', () => {
           dismissExpertOptimization: () => Promise.resolve({ ok: true as const, value: undefined }),
         },
       },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext
     const controller = new ExpertUiController(ctx)
     const sessionId = SessionId('late-navigation')
@@ -258,7 +263,7 @@ describe('expert UI controller', () => {
           dismissExpertOptimization: () => Promise.resolve({ ok: true as const, value: undefined }),
         },
       },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext
     const controller = new ExpertUiController(ctx)
     const sessionId = SessionId('stop-starting')
@@ -283,9 +288,9 @@ describe('expert UI controller', () => {
         },
       },
       sessions: {
-        observeSubagent: () => {
+        retain: () => {
           observing.resolve(undefined)
-          return observation.promise
+          return reference(observation.promise)
         },
       },
     } as unknown as ClientContext
@@ -316,7 +321,7 @@ describe('expert UI controller', () => {
         readExpert: () => Promise.resolve({ ok: false as const, error: { message: 'expert failed' } }),
         dismissExpertOptimization: () => Promise.resolve({ ok: true as const, value: undefined }),
       } },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext
     const controller = new ExpertUiController(ctx)
     await controller.load()
@@ -454,7 +459,7 @@ describe('expert UI controller', () => {
         optimizeExpert: () => Promise.reject(new Error('transport failed')),
         dismissExpertOptimization: dismiss,
       } },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext)
     await thrown.optimize(sessionId, message)
     expect(thrown.store.getSnapshot().optimizations.get(sessionId)).toMatchObject({
@@ -466,7 +471,7 @@ describe('expert UI controller', () => {
         optimizeExpert: () => Promise.resolve({ ok: false as const, error: { message: 'Host refused' } }),
         dismissExpertOptimization: dismiss,
       } },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext)
     await refused.optimize(sessionId, message)
     expect(refused.store.getSnapshot().optimizations.get(sessionId)).toMatchObject({
@@ -478,7 +483,7 @@ describe('expert UI controller', () => {
         optimizeExpert: () => Promise.resolve({ ok: true as const, value: { proposalId, childSessionId } }),
         dismissExpertOptimization: dismiss,
       } },
-      sessions: { observeSubagent: () => Promise.reject(new Error('observe failed')) },
+      sessions: { retain: () => reference(Promise.reject(new Error('observe failed'))) },
     } as unknown as ClientContext)
     await observeFailed.optimize(sessionId, message)
     expect(observeFailed.store.getSnapshot().optimizations.get(sessionId)).toMatchObject({
@@ -499,7 +504,7 @@ describe('expert UI controller', () => {
           return Promise.resolve({ ok: true as const, value: undefined })
         },
       } },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext)
     const startingRun = starting.optimize(sessionId, message)
     starting.dismissOptimization(sessionId)
@@ -516,7 +521,7 @@ describe('expert UI controller', () => {
           return Promise.resolve({ ok: true as const, value: undefined })
         },
       } },
-      sessions: { observeSubagent: () => { observing.resolve(undefined); return observation.promise } },
+      sessions: { retain: () => { observing.resolve(undefined); return reference(observation.promise) } },
     } as unknown as ClientContext)
     const observedRun = observed.optimize(sessionId, message)
     await observing.promise
@@ -535,7 +540,7 @@ describe('expert UI controller', () => {
         optimizeExpert: () => rejected.promise,
         dismissExpertOptimization: () => Promise.resolve({ ok: true as const, value: undefined }),
       } },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext)
     const rejectedRun = rejectedController.optimize(sessionId, message)
     rejectedController.dismissOptimization(sessionId)
@@ -549,7 +554,7 @@ describe('expert UI controller', () => {
         optimizeExpert: () => refused.promise,
         dismissExpertOptimization: () => Promise.resolve({ ok: true as const, value: undefined }),
       } },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext)
     const refusedRun = refusedController.optimize(sessionId, message)
     refusedController.dismissOptimization(sessionId)
@@ -570,7 +575,7 @@ describe('expert UI controller', () => {
         listExperts: () => Promise.resolve({ ok: true as const, value: { experts: [expert], authorable: true } }),
         readExpert: () => Promise.resolve({ ok: true as const, value: expert }),
       } },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext
     const controller = new ExpertUiController(ctx)
     controller.settleOptimization(sessionId, proposalId, { status: 'failed', error: 'too early' })
@@ -597,7 +602,7 @@ describe('expert UI controller', () => {
         acceptExpertOptimization: () => Promise.resolve({ ok: false as const, error: { message: 'accept failed' } }),
         dismissExpertOptimization: () => Promise.resolve({ ok: true as const, value: undefined }),
       } },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext)
     await failure.optimize(sessionId, message)
     failure.settleOptimization(sessionId, proposalId, optimizationOutcome(message))
@@ -617,7 +622,7 @@ describe('expert UI controller', () => {
         acceptExpertOptimization: () => accepted.promise,
         dismissExpertOptimization: () => Promise.resolve({ ok: true as const, value: undefined }),
       } },
-      sessions: { observeSubagent: () => Promise.resolve({}) },
+      sessions: { retain: () => reference() },
     } as unknown as ClientContext)
     await controller.optimize(sessionId, message)
     controller.settleOptimization(sessionId, proposalId, optimizationOutcome(message))

@@ -355,11 +355,16 @@ export class ExpertUiController {
       return
     }
     try {
-      await this.ctx.sessions.observeSubagent({
+      const reference = this.ctx.sessions.retain({
         parentSessionId: sessionId,
         childSessionId: result.value.childSessionId,
         mode: 'one-shot',
-      })
+      }, { source: 'controllerOperation' })
+      try {
+        await reference.ready
+      } finally {
+        reference.release()
+      }
     } catch (error) {
       this.optimizationRuns.delete(sessionId)
       void this.ctx.remote.agentPresets.dismissExpertOptimization(sessionId, result.value.proposalId)

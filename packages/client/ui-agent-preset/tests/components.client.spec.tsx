@@ -1,24 +1,23 @@
 // @vitest-environment jsdom
 /**
- * Conversation-adjacent preset surfaces: the new-session chip, the session
- * header label, and the expert-refinement action.
+ * The two conversation-adjacent surfaces: the new-session chip naming the
+ * next session's preset, and the session header's read-only label. The split
+ * is the host's rule — a session's history is produced under its preset's
+ * tools, so the choice is only ever offered before one starts.
  */
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
-import { MessageId } from '@deepseek-ai/dsh-llm/brand'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import type { SessionRetainInfo } from '@deepseek-ai/dsh-api-session-controller/client'
+import { SessionId } from '@deepseek-ai/dsh-session/types'
 import { AgentPresetLabel } from '../src/client/AgentPresetLabel.tsx'
 import type { AgentPresetLabelProps } from '../src/client/AgentPresetLabel.tsx'
 import { AgentPresetSeat } from '../src/client/AgentPresetSeat.tsx'
 import type { AgentPresetSeatProps } from '../src/client/AgentPresetSeat.tsx'
-import { ExpertOptimizeAction, type ExpertOptimizeActionProps } from '../src/client/ExpertOptimizeAction.tsx'
-import { ExpertWelcome, type ExpertWelcomeProps } from '../src/client/ExpertWelcome.tsx'
-import type { ExpertUiState } from '../src/client/expert-store.ts'
-import { EXPERT_TAB_ID, EXPERT_TAB_KIND, expertTabDefinition } from '../src/client/expert-tab.ts'
 import type { AgentPresetSettingsState } from '../src/client/settings-store.ts'
+import type { ExpertUiState } from '../src/client/expert-store.ts'
 import type { AgentPresetSeatState } from '../src/client/seat-store.ts'
 import { en } from '../src/client/locales.ts'
 
@@ -28,6 +27,11 @@ const ROSTER_READY: AgentPresetSettingsState = {
   status: 'ready',
   error: null,
   options: [{ id: 'standard', trust: 'system', name: '标准模式' }, { id: 'mine', trust: 'user' }],
+}
+
+const EXPERTS_EMPTY: ExpertUiState = {
+  status: 'ready', error: null, authorable: true, experts: [],
+  editor: { kind: 'list' }, optimizations: new Map(),
 }
 
 const SEAT_READY: AgentPresetSeatState = {
@@ -42,6 +46,8 @@ const SEAT_READY: AgentPresetSeatState = {
   introduce: false,
 }
 
+const useSessionRetainInfo = <Selected,>(selector: (value: undefined) => Selected): Selected => selector(undefined)
+
 /** The runtime's own `{name}` substitution, so a test reads the shown text. */
 function translate(key: keyof typeof en, params?: Record<string, unknown>): string {
   const template = en[key]
@@ -53,12 +59,17 @@ function translate(key: keyof typeof en, params?: Record<string, unknown>): stri
 function renderSeat(
   state: Partial<AgentPresetSeatState> = {},
   select: () => Promise<string | undefined> = () => Promise.resolve(undefined),
+  session?: { id: string; retainInfo: SessionRetainInfo | undefined },
 ) {
   const store = createSnapshotStore<AgentPresetSeatState>({ ...SEAT_READY, ...state })
   const actions = { load: vi.fn(() => Promise.resolve()), select: vi.fn(select), introduced: vi.fn() }
   render(<AgentPresetSeat {...({
     ...actions,
+    sessionId: session === undefined ? undefined : SessionId(session.id),
     useAgentPresetSeat: bindSnapshotSelector(store),
+    useSessionRetainInfo: session === undefined
+      ? useSessionRetainInfo
+      : <Selected,>(selector: (value: SessionRetainInfo | undefined) => Selected) => selector(session.retainInfo),
     t: translate,
   } as unknown as AgentPresetSeatProps)} />)
   return actions
@@ -67,34 +78,41 @@ function renderSeat(
 function renderLabel(
   summary: { blank: boolean; projectionValues?: { agentPreset?: string | null } } | undefined,
   roster: Partial<AgentPresetSettingsState> = {},
-  experts: ExpertUiState['experts'] = [],
 ) {
   // The chip and the label read the same roster, metadata included.
   const store = createSnapshotStore<AgentPresetSettingsState>({
     ...ROSTER_READY, options: SEAT_READY.options, ...roster,
   })
   const sessions = createSnapshotStore({ byId: summary === undefined ? {} : { s1: summary } })
-  const expertUi = createSnapshotStore<ExpertUiState>({
-    status: 'ready', error: null, authorable: true, experts, editor: { kind: 'list' }, optimizations: new Map(),
-  })
+  const experts = createSnapshotStore(EXPERTS_EMPTY)
   const load = vi.fn(() => Promise.resolve())
-  const loadExperts = vi.fn(() => Promise.resolve())
   const view = render(<AgentPresetLabel {...({
     load,
-    loadExperts,
     sessionId: 's1',
     useSessions: bindSnapshotSelector(sessions),
     useAgentPresets: bindSnapshotSelector(store),
-    useExpertUi: bindSnapshotSelector(expertUi),
+    useExpertUi: bindSnapshotSelector(experts),
+    loadExperts: vi.fn(() => Promise.resolve()),
     t: (key: keyof typeof en) => en[key],
   } as unknown as AgentPresetLabelProps)} />)
-  return { load, loadExperts, view }
+  return { load, view }
 }
 
 describe('the new-session chip', () => {
   it('renders nothing while the picker is disabled', () => {
     renderSeat({ showPicker: false })
 
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('renders only for a Session retained by the main view', () => {
+    renderSeat({}, undefined, {
+      id: 's1', retainInfo: { referenceCount: 1, retainedBy: { mainView: 1 } },
+    })
+    expect(screen.getByRole('button')).toBeTruthy()
+    cleanup()
+
+    renderSeat({}, undefined, { id: 's1', retainInfo: undefined })
     expect(screen.queryByRole('button')).toBeNull()
   })
 
@@ -331,18 +349,6 @@ describe('the session-header label', () => {
     expect(screen.getByTitle(en.headerHint).textContent).toBe('standard')
   })
 
-  it('resolves an expert name without adding it to the Agent-mode roster', async () => {
-    const { loadExperts } = renderLabel(
-      { blank: false, projectionValues: { agentPreset: 'expert-hidden' } },
-      { options: [] },
-      [{ id: 'expert-hidden', name: 'Interview coach', welcome: '', currentVersion: 2, updatedAt: 1 }],
-    )
-
-    await waitFor(() => { expect(loadExperts).toHaveBeenCalledTimes(1) })
-    expect(screen.getByText('Interview coach')).toBeTruthy()
-    expect(screen.queryByText('expert-hidden')).toBeNull()
-  })
-
   it('renders nothing, and reads no roster, when the session records no preset', async () => {
     const absent = renderLabel({ blank: true })
     expect(absent.view.container.firstChild).toBeNull()
@@ -355,138 +361,5 @@ describe('the session-header label', () => {
     await act(async () => { await Promise.resolve() })
     expect(absent.load).not.toHaveBeenCalled()
     expect(unknown.load).not.toHaveBeenCalled()
-  })
-})
-
-describe('the expert refinement action', () => {
-  it('blocks duplicate starts while the optimization request is crossing the wire', () => {
-    const sessionId = SessionId('expert-session')
-    const state: ExpertUiState = {
-      status: 'ready',
-      error: null,
-      authorable: true,
-      experts: [{
-        id: 'expert-1', name: 'Expert', welcome: '', currentVersion: 1, updatedAt: 1,
-      }],
-      editor: { kind: 'list' },
-      optimizations: new Map([[sessionId, { status: 'starting' }]]),
-    }
-    const optimize = vi.fn()
-    render(<ExpertOptimizeAction {...({
-      sessionId,
-      messageId: MessageId('answer-1'),
-      useProjection: () => 'expert-1',
-      useExpertUi: bindSnapshotSelector(createSnapshotStore(state)),
-      optimize,
-      t: translate,
-    } as unknown as ExpertOptimizeActionProps)} />)
-
-    const button = screen.getByRole('button', { name: en['expert.optimizing'] })
-    expect(button).toHaveProperty('disabled', true)
-    fireEvent.click(button)
-    expect(optimize).not.toHaveBeenCalled()
-  })
-
-  it('stays absent outside expert Sessions and starts from an eligible answer', () => {
-    const sessionId = SessionId('expert-action')
-    const state: ExpertUiState = {
-      status: 'ready', error: null, authorable: true,
-      experts: [{ id: 'expert-1', name: 'Expert', welcome: '', currentVersion: 1, updatedAt: 1 }],
-      editor: { kind: 'list' }, optimizations: new Map(),
-    }
-    const store = createSnapshotStore(state)
-    const optimize = vi.fn()
-    const view = render(<ExpertOptimizeAction {...({
-      sessionId, messageId: MessageId('answer-2'), useProjection: () => 'standard',
-      useExpertUi: bindSnapshotSelector(store), optimize, t: translate,
-    } as unknown as ExpertOptimizeActionProps)} />)
-    expect(view.container.firstChild).toBeNull()
-
-    view.rerender(<ExpertOptimizeAction {...({
-      sessionId, messageId: MessageId('answer-2'), useProjection: () => 'expert-1',
-      useExpertUi: bindSnapshotSelector(store), optimize, t: translate,
-    } as unknown as ExpertOptimizeActionProps)} />)
-    fireEvent.click(screen.getByRole('button', { name: en['expert.optimize'] }))
-    expect(optimize).toHaveBeenCalledExactlyOnceWith(MessageId('answer-2'))
-  })
-
-  it.each([
-    { status: 'running', proposalId: 'proposal', childSessionId: SessionId('child') },
-    {
-      status: 'ready', accepting: true, error: null, revisedPrompt: 'next',
-      proposal: {
-        proposalId: 'proposal', expertId: 'expert-1', targetMessageId: MessageId('answer'),
-        baseVersion: 1, status: 'changed', summary: 'change', originalPrompt: 'old',
-        revisedPrompt: 'next', changes: [],
-      },
-    },
-  ] as const)('blocks duplicate starts while optimization is $status', (optimization) => {
-    const sessionId = SessionId(`expert-${optimization.status}`)
-    const state: ExpertUiState = {
-      status: 'ready', error: null, authorable: true,
-      experts: [{ id: 'expert-1', name: 'Expert', welcome: '', currentVersion: 1, updatedAt: 1 }],
-      editor: { kind: 'list' },
-      optimizations: new Map([[sessionId, optimization as ExpertUiState['optimizations'] extends ReadonlyMap<SessionId, infer T> ? T : never]]),
-    }
-    render(<ExpertOptimizeAction {...({
-      sessionId, messageId: MessageId('answer'), useProjection: () => 'expert-1',
-      useExpertUi: bindSnapshotSelector(createSnapshotStore(state)), optimize: vi.fn(), t: translate,
-    } as unknown as ExpertOptimizeActionProps)} />)
-    expect(screen.getByRole('button', { name: en['expert.optimizing'] })).toHaveProperty('disabled', true)
-  })
-})
-
-describe('the expert welcome cue', () => {
-  function renderWelcome(options: {
-    blank: boolean
-    expertId?: string | undefined
-    welcome?: string | undefined
-  }) {
-    const expertId = options.expertId ?? 'expert-1'
-    const state: ExpertUiState = {
-      status: 'ready', error: null, authorable: true,
-      experts: [{
-        id: 'expert-1', name: 'Interview coach', welcome: options.welcome ?? 'Tell me the role.',
-        currentVersion: 4, updatedAt: 1, icon: 'briefcase',
-      }],
-      editor: { kind: 'list' }, optimizations: new Map(),
-    }
-    const load = vi.fn(() => Promise.resolve())
-    const view = render(<ExpertWelcome {...({
-      session: { blank: options.blank }, useProjection: () => expertId,
-      useExpertUi: bindSnapshotSelector(createSnapshotStore(state)), load, t: translate,
-    } as unknown as ExpertWelcomeProps)} />)
-    return { load, view }
-  }
-
-  it('shows the selected expert welcome without adding it to model history', async () => {
-    const { load } = renderWelcome({ blank: true })
-    await waitFor(() => { expect(load).toHaveBeenCalledTimes(1) })
-    expect(screen.getByRole('status').textContent).toContain('Interview coach')
-    expect(screen.getByRole('status').textContent).toContain('Tell me the role.')
-    expect(screen.getByRole('status').textContent).toContain('v4')
-  })
-
-  it.each([
-    { blank: false },
-    { blank: true, expertId: 'standard' },
-    { blank: true, welcome: '   ' },
-  ])('stays absent for $blank/$expertId/$welcome', ({ blank, expertId, welcome }) => {
-    const { view } = renderWelcome({ blank, expertId, welcome })
-    expect(view.container.firstChild).toBeNull()
-  })
-})
-
-describe('the expert Sidebar definition', () => {
-  it('keeps one identity and resolves live labels', () => {
-    const definition = expertTabDefinition((key: string) => key)
-    expect(definition).toMatchObject({ id: EXPERT_TAB_ID, kind: EXPERT_TAB_KIND, priority: 'builtin' })
-    expect(definition.title({} as never)).toBe('expert.tabTitle')
-    const guide = definition.guide?.[0]
-    if (guide === undefined) throw new Error('expert guide entry is absent')
-    if (guide.description === undefined) throw new Error('expert guide description is absent')
-    expect(guide.id).toBe('manage')
-    expect(guide.title()).toBe('expert.manage')
-    expect(guide.description()).toBe('expert.manageHint')
   })
 })

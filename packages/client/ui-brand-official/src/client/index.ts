@@ -10,7 +10,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import { BRAND_SETTINGS_NAMESPACE, DEFAULT_BRAND_SETTINGS, type BrandSettings } from '../brand-settings.ts'
-import { BrandSettingsCard, type BrandEditorState, OfficialBrandMark, OfficialBrandName, OfficialHeroBrandMark, OfficialHeroBrandName } from './Brand.tsx'
+import { BrandSettingsCard, type BrandEditorState, OfficialBrandMark, OfficialBrandName, OfficialHeroBrandMark } from './Brand.tsx'
 import { en, zh, type BrandLocaleKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -177,11 +177,9 @@ export function apply(ctx: ClientContext): void {
     brand => brand.enabled && brand.icon.trim() !== '',
     () => ctx.slots.register({ name: 'conversation.hero.brand.mark', inject: () => controller.face() }, OfficialHeroBrandMark),
   ))
-  ctx.slots.inject('conversation.hero.brand.name', () => occupyWhile(
-    brand => brand.enabled && brand.name.trim() !== '',
-    () => ctx.slots.register({ name: 'conversation.hero.brand.name', inject: () => controller.face() }, OfficialHeroBrandName),
-  ))
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item', key: BRAND_SETTINGS_NAMESPACE, locale: 'ui-brand-official', inject: () => controller.face(),
+  ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
+    name: 'settings.plugins.tab', id: BRAND_SETTINGS_NAMESPACE, order: 20,
+    label: () => ctx.locale.bind('ui-brand-official')('title'),
+    locale: 'ui-brand-official', inject: () => controller.face(),
   }, BrandSettingsCard))
 }

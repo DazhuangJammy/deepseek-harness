@@ -179,7 +179,10 @@ export function apply(ctx: ClientContext): void {
   ))
   ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
     name: 'settings.plugins.tab', id: BRAND_SETTINGS_NAMESPACE, order: 20,
-    label: () => ctx.locale.bind('ui-brand-official')('title'),
+    // The dictionary is optional — a host without `locale` registers none — so
+    // the label reads it through `ctx.get` and falls back to the shipped English
+    // copy instead of reaching for an uninjected service.
+    label: () => ctx.get('locale')?.bind('ui-brand-official')('title') ?? en.title,
     locale: 'ui-brand-official', inject: () => controller.face(),
   }, BrandSettingsCard))
 }

@@ -3,6 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
+import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import { apply, inject } from '../src/client/index.ts'
 import { OfficialBrandMark, OfficialBrandName } from '../src/client/Brand.tsx'
 import { apply as hostApply } from '../src/index.ts'
@@ -19,13 +20,19 @@ const HOLES = [
 
 const HERO_HOLES = ['conversation.hero.brand.mark'] as const
 
+/** The Plugins-settings list this plugin contributes its settings card to. */
+const TAB_HOLE = 'settings.plugins.tab'
+
 async function bench(declare = true) {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
   const slots = ctx.get('slots') as SlotRegistry
   const declareHoles = () => slots.register({
     name: 'root',
-    children: Object.fromEntries([...HOLES, ...HERO_HOLES].map(name => [name, { kind: 'single', scope: 'root' }])),
+    children: {
+      ...Object.fromEntries([...HOLES, ...HERO_HOLES].map(name => [name, { kind: 'single', scope: 'root' }])),
+      [TAB_HOLE]: { kind: 'list', scope: 'root' },
+    },
   } as never, () => null)
   const disposeHoles = declare ? declareHoles() : undefined
   return { ctx, slots, declareHoles, disposeHoles }
@@ -76,6 +83,18 @@ describe('official browser-brand plugin', () => {
     const subject = await bench()
     await subject.ctx.plugin({ inject: [...inject], apply }).await()
     for (const hole of HERO_HOLES) expect(subject.slots.entries(hole)).toHaveLength(0)
+  })
+
+  // The tab label is read on every Plugins-page snapshot, and the browser
+  // plugin injects only `slots`: a label reaching for `ctx.locale` throws out
+  // of the snapshot and takes the whole tab list with it.
+  it('labels the settings tab on a host without a locale service', async () => {
+    vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 'official')
+    const subject = await bench()
+    await subject.ctx.plugin({ inject: [...inject], apply }).await()
+    const entry = subject.slots.entries(TAB_HOLE)[0]
+    expect(entry?.options.id).toBe('ui-brand-official')
+    expect(resolveSlotLabel(entry?.options.label)).toBe('Interface branding')
   })
 
   it('renders the official name independently from both requested mark sizes', () => {

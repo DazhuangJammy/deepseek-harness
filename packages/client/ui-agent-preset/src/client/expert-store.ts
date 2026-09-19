@@ -8,6 +8,7 @@ import type {
   ExpertProposalId, ExpertSummary, ExpertVersionComparison,
 } from '@deepseek-ai/dsh-agent-presets/types'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
@@ -113,6 +114,14 @@ export class ExpertUiController {
   /** Settlements that beat the start response and child-session observation. */
   private readonly pendingOutcomes = new Map<ExpertProposalId, ExpertOptimizationOutcome>()
 
+  /**
+   * Retained child generation behind each Session's running refinement. The
+   * Sidebar embeds that child's conversation while the run is live, and
+   * borrowing a Session binding is an owned act: the reference is taken when
+   * the run starts and released on every path out of `running`.
+   */
+  private readonly childReferences = new Map<SessionId, SessionReference>()
+
   /** @param ctx - browser plugin context carrying the generated agentPresets Remote namespace. */
   constructor(private readonly ctx: ClientContext) {}
 
@@ -125,6 +134,51 @@ export class ExpertUiController {
     if (value === undefined) optimizations.delete(sessionId)
     else optimizations.set(sessionId, value)
     this.set({ optimizations })
+    // Only a running run renders the child Session; every other state returns it.
+    if (value?.status !== 'running') this.releaseChildReference(sessionId)
+  }
+
+  /** Release the child generation this Session's refinement was holding. */
+  private releaseChildReference(sessionId: SessionId): void {
+    const held = this.childReferences.get(sessionId)
+    if (held === undefined) return
+    this.childReferences.delete(sessionId)
+    held.release()
+  }
+
+  /**
+   * Read the retained generation behind one Session's running refinement.
+   * @param sessionId - parent expert Session.
+   * @returns the child reference to render against, or undefined without a live run.
+   */
+  childSession(sessionId: SessionId): SessionReference | undefined {
+    return this.childReferences.get(sessionId)
+  }
+
+  /** Release every retained child generation (plugin teardown). */
+  dispose(): void {
+    for (const sessionId of [...this.childReferences.keys()]) this.releaseChildReference(sessionId)
+  }
+
+  /**
+   * Retain one refinement child generation and wait until its binding is usable.
+   * @param sessionId - parent expert Session owning the run.
+   * @param childSessionId - observed one-shot child Session.
+   * @returns the retained reference; released again when readiness fails.
+   */
+  private async retainChild(sessionId: SessionId, childSessionId: SessionId): Promise<SessionReference> {
+    const reference = this.ctx.sessions.retain({
+      parentSessionId: sessionId,
+      childSessionId,
+      mode: 'one-shot',
+    }, { source: 'controllerOperation' })
+    try {
+      await reference.ready
+    } catch (error) {
+      reference.release()
+      throw error
+    }
+    return reference
   }
 
   private applyOptimizationOutcome(
@@ -354,28 +408,22 @@ export class ExpertUiController {
       this.setOptimization(sessionId, { status: 'failed', error: result.error.message })
       return
     }
-    try {
-      const reference = this.ctx.sessions.retain({
-        parentSessionId: sessionId,
-        childSessionId: result.value.childSessionId,
-        mode: 'one-shot',
-      }, { source: 'controllerOperation' })
-      try {
-        await reference.ready
-      } finally {
-        reference.release()
-      }
-    } catch (error) {
+    const reference = await this.retainChild(sessionId, result.value.childSessionId).catch((error: unknown) => {
       this.optimizationRuns.delete(sessionId)
       void this.ctx.remote.agentPresets.dismissExpertOptimization(sessionId, result.value.proposalId)
       this.setOptimization(sessionId, { status: 'failed', error: String(error) })
-      return
-    }
+      return undefined
+    })
+    if (reference === undefined) return
     if (this.optimizationRuns.get(sessionId) !== operation) {
+      reference.release()
       void this.ctx.remote.agentPresets.dismissExpertOptimization(sessionId, result.value.proposalId)
       return
     }
     this.optimizationRuns.delete(sessionId)
+    // The running view embeds this child, so the retained generation stays in
+    // the controller until the run leaves `running`.
+    this.childReferences.set(sessionId, reference)
     this.setOptimization(sessionId, {
       status: 'running',
       proposalId: result.value.proposalId,

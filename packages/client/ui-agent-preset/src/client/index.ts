@@ -121,6 +121,10 @@ export function apply(ctx: ClientContext): void {
 
   ctx.effect(() => ctx.locale.register('settings.agentPreset', { zh, en }), 'ui-agent-preset: settings row dictionaries')
 
+  // A running refinement's embedded child view borrows that child's Session
+  // generation; plugin teardown returns every one of them.
+  ctx.effect(() => () => { experts.dispose() }, 'ui-agent-preset: expert child references')
+
   ctx.inject(['commandUi', 'sidebarRight', 'sidebarRightTabs'], (expertScope: ClientContext) => {
     const t = expertScope.locale.bind('settings.agentPreset')
     expertScope.effect(() => expertScope.sidebarRightTabs.register(expertTabDefinition(t)), 'ui-agent-preset: expert Sidebar type')
@@ -142,6 +146,7 @@ export function apply(ctx: ClientContext): void {
         save: () => experts.save(sessionId),
         accept: () => experts.accept(sessionId),
         dismissOptimization: () => { experts.dismissOptimization(sessionId) },
+        childSession: id => experts.childSession(id),
       }),
     }, ExpertPanel)), 'ui-agent-preset: expert Sidebar body')
 

@@ -2,6 +2,8 @@
 
 import { useEffect, type ReactNode } from 'react'
 import { diffWordsWithSpace, type Change } from 'diff'
+import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { ExpertIcon, ExpertOptimizationProposal } from '@deepseek-ai/dsh-agent-presets/types'
 import type { InjectFace, PropsFixedSessionSlots, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -26,6 +28,11 @@ export interface ExpertPanelInjected {
   save: () => Promise<void>
   accept: () => Promise<void>
   dismissOptimization: () => void
+  /**
+   * Retained child generation behind this Session's running refinement, for the
+   * embedded read-only view; the controller holds it while the run is live.
+   */
+  childSession: (sessionId: SessionId) => SessionReference | undefined
 }
 
 export type ExpertPanelProps =
@@ -350,7 +357,7 @@ function OptimizationRunHeader({ stop, t }: {
 export function ExpertPanel(props: ExpertPanelProps): ReactNode {
   const {
     sessionId, useExpertUi, load, openList, beginCreate, beginEdit, openVersion, closeVersion, patchDraft,
-    patchOptimization, save, accept, dismissOptimization, FixedSessionSlotView, t,
+    patchOptimization, save, accept, dismissOptimization, childSession, FixedSessionSlotView, t,
   } = props
   const state = useExpertUi(value => value)
   const optimization = state.optimizations.get(sessionId)
@@ -367,15 +374,18 @@ export function ExpertPanel(props: ExpertPanelProps): ReactNode {
     )
   }
   if (optimization?.status === 'running') {
+    const child = childSession(sessionId)
     return (
       <div className={css.agentRun}>
         <OptimizationRunHeader stop={dismissOptimization} t={t} />
-        <FixedSessionSlotView
-          sessionId={optimization.childSessionId}
-          slot="conversation.view"
-          owner={{ viewRequest: null, openView: () => undefined, completeViewRequest: () => undefined }}
-          options={{ only: 'chat' }}
-        />
+        {child === undefined ? null : (
+          <FixedSessionSlotView
+            session={child}
+            slot="conversation.view"
+            owner={{ viewRequest: null, openView: () => undefined, completeViewRequest: () => undefined }}
+            options={{ only: 'chat' }}
+          />
+        )}
       </div>
     )
   }

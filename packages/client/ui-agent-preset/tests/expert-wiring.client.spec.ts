@@ -164,6 +164,7 @@ describe('expert client wiring', () => {
     expect(panel.options).toMatchObject({ key: '@deepseek-ai/dsh-client-ui-agent-preset/expert-prompt' })
     const panelInject = panel.options.inject as (id: SessionId) => ExpertPanelInjected
     const panelActions = panelInject(sessionId)
+    expect(panelActions.childSession(sessionId)).toBeUndefined()
     await panelActions.load()
     panelActions.openList()
     panelActions.beginCreate()

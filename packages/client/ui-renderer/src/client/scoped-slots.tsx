@@ -8,13 +8,13 @@ import {
 } from 'react'
 import {
   SlotOwnershipError, StaleAuthorizationError, standardHookPropName,
-  type ChainRenderOpts, type HostObservable, type KeyedStandardSource, type LocaleFace, type RenderFactorySlot, type RenderOpts,
-  type ScopedStandardSourceBinding, type SessionAreaProps, type SessionProviderComponent, type SlotRenderer,
-  type SlotRendererHost, type SlotScope, type SlotScopeAdapter, type StandardSourceBinding,
-  type StoredEntry, type StoredFactory, type Translate,
+  type ChainRenderOpts, type FixedSessionSlotViewProps, type HostObservable, type KeyedStandardSource, type LocaleFace,
+  type RenderFactorySlot, type RenderOpts, type ScopedStandardSourceBinding, type SessionAreaProps,
+  type SessionProviderComponent, type SlotRenderer, type SlotRendererHost, type SlotScope, type SlotScopeAdapter,
+  type StandardSourceBinding, type StrictSessionSlotKey, type StoredEntry, type StoredFactory, type Translate,
 } from '@deepseek-ai/dsh-client-ui-slots'
 import {
-  HostContext, RootStandardProvider, ScopeBindingProvider, ScopeProvider,
+  HostContext, RootStandardProvider, ScopeBindingProvider, ScopeProvider, FixedSessionScopeProvider,
   keyedObservableHook, maybeObservableHook, observableHook, useHost, useRootBinding,
   useScopeBinding,
 } from './bindings.tsx'
@@ -33,6 +33,38 @@ interface BoundSlotInject {
 type RenderSlotBinding = (key: string, owner: object, opts?: RenderOpts) => ReactNode
 
 type RenderSlotChainBinding = (key: string, owner: object, opts?: ChainRenderOpts) => ReactNode
+
+/**
+ * Fixed-Session renderer bound to one registration's explicit slot allowlist.
+ * The component renders the slot's occupant against a caller-retained Session
+ * generation instead of the surrounding scope, so an entry can embed another
+ * Session's view without adopting it.
+ */
+const fixedSessionSlotViewCache = new WeakMap<StoredEntry, FC<FixedSessionSlotViewProps<StrictSessionSlotKey>>>()
+
+function fixedSessionSlotView(
+  host: SlotRendererHost,
+  entry: StoredEntry,
+): FC<FixedSessionSlotViewProps<StrictSessionSlotKey>> {
+  let View = fixedSessionSlotViewCache.get(entry)
+  if (View !== undefined) return View
+  const authorized = new Set(entry.fixedSessionSlots ?? [])
+  View = function FixedSessionSlotView({ session, slot, owner, options }): ReactNode {
+    if (!authorized.has(slot)) {
+      throw new SlotOwnershipError(`fixed Session slot '${slot}' is not authorized by this entry`)
+    }
+    if (host.specOf(slot)?.scope !== 'session') {
+      throw new SlotOwnershipError(`fixed Session slot '${slot}' is not a declared strict-Session slot`)
+    }
+    return (
+      <FixedSessionScopeProvider session={session}>
+        <SlotOutlet slotKey={slot} ownerProps={owner} opts={options} />
+      </FixedSessionScopeProvider>
+    )
+  }
+  fixedSessionSlotViewCache.set(entry, View)
+  return View
+}
 
 type FactoryRenderOwner = StoredEntry | StoredFactory
 const factoryRenderCache = new WeakMap<FactoryRenderOwner, RenderFactorySlot>()
@@ -588,6 +620,11 @@ function standardKit(
       }
       kit['SessionProvider'] = scopeAreaProvider(adapter)
     }
+  }
+  // Only a registration that named its reusable Session slots receives the
+  // fixed-Session renderer; the component re-checks the allowlist at render.
+  if (entry.fixedSessionSlots !== undefined) {
+    kit['FixedSessionSlotView'] = fixedSessionSlotView(host, entry)
   }
   return { kit, standard, actions: store?.actions }
 }

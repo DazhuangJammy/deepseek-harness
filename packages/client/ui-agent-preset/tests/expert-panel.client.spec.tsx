@@ -4,6 +4,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { brandString } from '@deepseek-ai/dsh-brand'
+import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { ExpertProposalId } from '@deepseek-ai/dsh-agent-presets/types'
 import { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -22,7 +23,7 @@ function panelProps(state: ExpertUiState, overrides: Partial<ExpertPanelProps> =
     load: vi.fn(() => Promise.resolve()), openList: vi.fn(), beginCreate: vi.fn(), beginEdit: vi.fn(() => Promise.resolve()),
     openVersion: vi.fn(() => Promise.resolve()), closeVersion: vi.fn(), patchDraft: vi.fn(),
     patchOptimization: vi.fn(), save: vi.fn(() => Promise.resolve()), accept: vi.fn(() => Promise.resolve()),
-    dismissOptimization: vi.fn(), FixedSessionSlotView: () => null,
+    dismissOptimization: vi.fn(), childSession: () => undefined, FixedSessionSlotView: () => null,
     t: makeTranslate(zh, commonZh), ...overrides,
   } as unknown as ExpertPanelProps
 }
@@ -242,6 +243,7 @@ describe('expert panel', () => {
       load: vi.fn(), openList: vi.fn(), beginCreate: vi.fn(), beginEdit: vi.fn(),
       openVersion: vi.fn(), closeVersion: vi.fn(), patchDraft: vi.fn(), patchOptimization: vi.fn(),
       save: vi.fn(), accept: vi.fn(), dismissOptimization, t: makeTranslate(zh, commonZh),
+      childSession: () => ({ sessionId: childSessionId }) as unknown as SessionReference,
       FixedSessionSlotView: () => null,
     } as unknown as ExpertPanelProps
 
@@ -454,6 +456,7 @@ describe('expert panel', () => {
     }
     view.rerender(<ExpertPanel {...panelProps(running, {
       sessionId, dismissOptimization,
+      childSession: () => ({ sessionId: SessionId('child-running') }) as unknown as SessionReference,
       FixedSessionSlotView: ((props: { owner: typeof fixedOwner }) => {
         fixedOwner = props.owner
         return <span>child conversation</span>

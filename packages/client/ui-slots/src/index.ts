@@ -368,8 +368,12 @@ export type SessionProviderComponent = (props: SessionAreaProps) => ReactNode
 
 /** Props for rendering one authorized slot against a non-selected Session. */
 export interface FixedSessionSlotViewProps<K extends StrictSessionSlotKey> {
-  /** Already materialized Session binding. */
-  readonly sessionId: string
+  /**
+   * Retained Session generation to render against. Borrowing another Session's
+   * binding is an owned act, so the caller holds the reference while the view
+   * is mounted — the same currency `SessionProvider` accepts.
+   */
+  readonly session: SlotScopeTargetMap[keyof SlotScopeTargetMap & 'session']
   /** Existing Session-scoped slot authorized by the registration. */
   readonly slot: K
   /** Owner values declared by that slot. */

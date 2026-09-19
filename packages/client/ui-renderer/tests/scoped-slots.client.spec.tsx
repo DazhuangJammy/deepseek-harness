@@ -248,6 +248,12 @@ function makeHost() {
       if (source === undefined) throw new Error(`unknown test session: ${id}`)
       source.set(snapshot)
     },
+    /** The retained generation a fixed-Session view is handed instead of a bare id. */
+    reference: (id: string): SessionReference => {
+      const target = targets.get(id)
+      if (target === undefined) throw new Error(`unknown test session: ${id}`)
+      return target
+    },
     replaceScope: (adapter: SlotScopeAdapter) => {
       activeScopeAdapter = adapter
       scopeRevision.set(scopeRevision.getSnapshot() + 1)
@@ -346,11 +352,11 @@ describe('child outlets and the renderSlot binding', () => {
     h.add('root', {
       component: ({ FixedSessionSlotView }: {
         FixedSessionSlotView: FC<{
-          sessionId: string
+          session: SessionReference
           slot: 'k.embedded'
           owner: object
         }>
-      }) => <FixedSessionSlotView sessionId="child" slot="k.embedded" owner={{}} />,
+      }) => <FixedSessionSlotView session={h.reference('child')} slot="k.embedded" owner={{}} />,
       fixedSessionSlots: ['k.embedded'],
     })
 
@@ -361,10 +367,11 @@ describe('child outlets and the renderSlot binding', () => {
 
   it('rejects a non-Session key through the erased fixed-slot runtime face', () => {
     const h = makeHost()
+    h.addSession('child', { label: 'child' })
     h.add('root', {
       component: ({ FixedSessionSlotView }: {
-        FixedSessionSlotView: FC<{ sessionId: string; slot: string; owner: object }>
-      }) => <FixedSessionSlotView sessionId="child" slot="root" owner={{}} />,
+        FixedSessionSlotView: FC<{ session: SessionReference; slot: string; owner: object }>
+      }) => <FixedSessionSlotView session={h.reference('child')} slot="root" owner={{}} />,
       fixedSessionSlots: ['root'] as never,
     })
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})

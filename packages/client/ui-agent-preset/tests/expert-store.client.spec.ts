@@ -310,6 +310,38 @@ describe('expert UI controller', () => {
     })
   })
 
+  it('holds the refinement child generation only while the run is live', async () => {
+    const sessionId = SessionId('expert-retain')
+    const message = brandString<MessageId>('answer-retain')
+    const releases: string[] = []
+    const ctx = {
+      remote: { agentPresets: {
+        optimizeExpert: () => Promise.resolve({ ok: true as const, value: { proposalId, childSessionId } }),
+        dismissExpertOptimization: () => Promise.resolve({ ok: true as const, value: undefined }),
+      } },
+      sessions: {
+        retain: () => ({ ready: Promise.resolve({}), release: () => { releases.push('release') } }),
+      },
+    } as unknown as ClientContext
+    const controller = new ExpertUiController(ctx)
+
+    await controller.optimize(sessionId, message)
+    expect(controller.childSession(sessionId)).toBeDefined()
+    expect(releases).toEqual([])
+
+    // The embedded view is the only holder, so a settled run returns the generation.
+    controller.settleOptimization(sessionId, proposalId, optimizationOutcome(message))
+    expect(controller.childSession(sessionId)).toBeUndefined()
+    expect(releases).toEqual(['release'])
+
+    // Teardown returns whatever a still-running refinement holds.
+    await controller.optimize(sessionId, message)
+    expect(controller.childSession(sessionId)).toBeDefined()
+    controller.dispose()
+    expect(controller.childSession(sessionId)).toBeUndefined()
+    expect(releases).toEqual(['release', 'release'])
+  })
+
   it('reports roster and editor read failures without discarding the shared controller', async () => {
     let listCalls = 0
     const ctx = {

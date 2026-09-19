@@ -51,7 +51,7 @@ kind: "package-reference"
 <details>
 <summary>实现细节——点击展开</summary>
 
-设置分区通过现有的 `settings.update` 写入宿主的 `agent-presets` 命名空间。可见性开关只设置 `modeSelectionEnabled`；仅当选择器显示时，设为默认动作才会写入 `default`。两种写入之后，都由宿主名单给出当前生效的默认值，再由 chip controller 的 `agentPresets/select` 链路把它带到同一个仍为空白的会话；专家选择复用同一条受保护路径。展示选项与宿主的生效可见性来自 `agentPresets/list`，专家管理则使用 typed 专家端点和一个共享浏览器 store。专家 store 按 Session 保存优化状态，因此两个打开的对话不会交换候选稿。优化期间，`sessions.observeSubagent()` 会在不改变主 Session 选择的情况下打开子级事件窗口，renderer 注入的 `FixedSessionSlotView` 再把既有对话槽位绑定到该子级。既有指令菜单负责专家搜索与选择，右侧栏负责管理与检查。[`dsh-client-connection`](../connection/README.zh.md) 使用同一浏览器会话认证全部这些宿主方法。分区在自身操作、`settings/document-updated` 与 `connection/reset` 时重读，因为普通组装文件仍可能在浏览器之外编辑。
+设置分区通过现有的 `settings.update` 写入宿主的 `agent-presets` 命名空间。可见性开关只设置 `modeSelectionEnabled`；仅当选择器显示时，设为默认动作才会写入 `default`。两种写入之后，都由宿主名单给出当前生效的默认值，再由 chip controller 的 `agentPresets/select` 链路把它带到同一个仍为空白的会话；专家选择复用同一条受保护路径。展示选项与宿主的生效可见性来自 `agentPresets/list`，专家管理则使用 typed 专家端点和一个共享浏览器 store。专家 store 按 Session 保存优化状态，因此两个打开的对话不会交换候选稿。优化期间，store 以 `controllerOperation` 保留观察到的那一代子级 Session，而不改变当前选中的主 Session；renderer 注入的 `FixedSessionSlotView` 再把既有对话槽位绑定到该保留引用，一旦离开运行状态就释放。既有指令菜单负责专家搜索与选择，右侧栏负责管理与检查。[`dsh-client-connection`](../connection/README.zh.md) 使用同一浏览器会话认证全部这些宿主方法。分区在自身操作、`settings/document-updated` 与 `connection/reset` 时重读，因为普通组装文件仍可能在浏览器之外编辑。
 
 </details>
 

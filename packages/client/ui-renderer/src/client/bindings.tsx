@@ -1,10 +1,11 @@
 /** Internal React bindings for renderer hosts and standard-source scopes. */
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useContext, useSyncExternalStore, type ReactNode } from 'react'
 import type {
   HostObservable,
   KeyedStandardSource,
   MaybeSnapshotSelectorHook,
   SlotRendererHost,
+  SlotScopeTargetMap,
   SnapshotSelectorHook,
   StandardSourceBinding,
 } from '@deepseek-ai/dsh-client-ui-slots'
@@ -169,5 +170,36 @@ export function ScopeProvider({
   const adapter = host.scope(scope)
   if (adapter === undefined) throw new SlotAssemblyError(`scope '${scope}' rendered without an installed adapter`)
   const binding = observableHook(adapter.current)(value => value)
+  return <ScopeBindingContext.Provider value={binding}>{children}</ScopeBindingContext.Provider>
+}
+
+/**
+ * Bind descendants to one retained Session generation instead of the current
+ * selection. The caller owns the reference for as long as this subtree is
+ * mounted; the adapter publishes the absent projection once that generation
+ * ends, so a released reference degrades to an empty scope rather than a stale
+ * binding.
+ * @param props - provider inputs.
+ * @param props.session - retained Session generation to bind.
+ * @param props.children - subtree rendered against that binding.
+ * @returns the subtree under the fixed Session binding.
+ */
+export function FixedSessionScopeProvider({
+  session,
+  children,
+}: {
+  session: SlotScopeTargetMap[keyof SlotScopeTargetMap & 'session']
+  children: ReactNode
+}) {
+  const host = useHost()
+  observableHook(host.scopeRevision)(value => value)
+  const adapter = host.scope('session')
+  if (adapter === undefined) throw new SlotAssemblyError("scope 'session' rendered without an installed adapter")
+  const source = adapter.bindingSource(session)
+  const binding = useSyncExternalStore(
+    listener => source.subscribe(listener),
+    () => source.getSnapshot(),
+    () => source.getSnapshot(),
+  )
   return <ScopeBindingContext.Provider value={binding}>{children}</ScopeBindingContext.Provider>
 }

@@ -612,7 +612,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'FixedSessionSlotViewProps',
-    declaration: 'export interface FixedSessionSlotViewProps<K extends StrictSessionSlotKey> {\n    readonly sessionId: string;\n    readonly slot: K;\n    readonly owner: OwnerOf<K>;\n    readonly options?: RenderOpts<EntryKeyOf<K>>;\n}',
+    declaration: 'export interface FixedSessionSlotViewProps<K extends StrictSessionSlotKey> {\n    readonly session: SlotScopeTargetMap[keyof SlotScopeTargetMap & \'session\'];\n    readonly slot: K;\n    readonly owner: OwnerOf<K>;\n    readonly options?: RenderOpts<EntryKeyOf<K>>;\n}',
   },
   {
     name: 'GlobalStandardProps',

@@ -22,6 +22,13 @@ const GATED: SelectOption = {
     confirmLabel: 'Enable Full access',
   },
 }
+const ACTIONABLE: SelectOption = {
+  id: 'expert',
+  label: 'Interview expert',
+  detail: 'v2',
+  detailPlacement: 'inline',
+  secondaryAction: { label: 'Edit Interview expert' },
+}
 
 const SEGMENT: TokenSegment = { via: 'enter', token: '/theme' }
 
@@ -234,6 +241,50 @@ describe('search / move / highlight over the filtered list', () => {
 })
 
 describe('select', () => {
+  it('runs a secondary action without running the row selection', async () => {
+    const onSelect = vi.fn()
+    const onSecondaryAction = vi.fn()
+    const deps = makeDeps()
+    const { popup } = await readyPopup({
+      options: () => Promise.resolve([ACTIONABLE]),
+      onSelect,
+      onSecondaryAction,
+    }, deps)
+
+    await popup.selectSecondary(0)
+
+    expect(onSecondaryAction).toHaveBeenCalledExactlyOnceWith(ACTIONABLE, CTX_A)
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(deps.consume).toHaveBeenCalledExactlyOnceWith(SEGMENT)
+    expect(popup.state.getSnapshot().open).toBe(false)
+  })
+
+  it('ignores a secondary action when the option or handler does not provide one', async () => {
+    const deps = makeDeps()
+    const { popup } = await readyPopup({}, deps)
+    await popup.selectSecondary(0)
+    expect(deps.consume).not.toHaveBeenCalled()
+    expect(popup.state.getSnapshot().open).toBe(true)
+
+    const { popup: noHandler } = await readyPopup({ options: () => Promise.resolve([ACTIONABLE]) }, deps)
+    await noHandler.selectSecondary(0)
+    expect(deps.consume).not.toHaveBeenCalled()
+    expect(noHandler.state.getSnapshot().open).toBe(true)
+  })
+
+  it('surfaces a failed secondary action without consuming the token', async () => {
+    const deps = makeDeps()
+    const { popup } = await readyPopup({
+      options: () => Promise.resolve([ACTIONABLE]),
+      onSecondaryAction: () => { throw new Error('editor refused') },
+    }, deps)
+
+    await popup.selectSecondary(0)
+
+    expect(popup.state.getSnapshot()).toMatchObject({ open: true, submitting: false, error: 'editor refused' })
+    expect(deps.consume).not.toHaveBeenCalled()
+  })
+
   it('gates a confirmed option until acknowledgement, then settles through the original binding', async () => {
     const onSelect = vi.fn()
     const deps = makeDeps()

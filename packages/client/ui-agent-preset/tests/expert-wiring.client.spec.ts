@@ -128,7 +128,7 @@ function registration(h: ReturnType<typeof harness>, name: string): CapturedRegi
 }
 
 describe('expert client wiring', () => {
-  it('routes menu choices through the expert controller', async () => {
+  it('routes menu choices and secondary actions through the expert controller', async () => {
     const h = harness()
     const command = h.commands.find(row => row.name === 'experts')
     if (command?.ui.kind !== 'popupSelect') throw new Error('expert popup did not register')
@@ -145,6 +145,13 @@ describe('expert client wiring', () => {
     await expect(command.ui.options({} as never, aborted.signal)).resolves.toEqual([])
     const options = await command.ui.options({} as never, new AbortController().signal)
     expect(options.map(row => row.id)).toEqual(['manage', 'create', 'select:interview'])
+    // Every expert row carries the hover edit control beside its inline version.
+    expect(options[2]).toMatchObject({
+      label: 'Interview coach',
+      detail: 'v1',
+      detailPlacement: 'inline',
+      secondaryAction: { label: 'Edit Interview coach' },
+    })
 
     const session = { sessionId } as never
     await command.ui.onSelect({ id: 'create', label: 'create' }, session)
@@ -152,10 +159,13 @@ describe('expert client wiring', () => {
     await command.ui.onSelect({ id: 'ignored', label: 'ignored' }, session)
     await command.ui.onSelect({ id: 'select:interview', label: 'interview' }, session)
     await command.ui.onSelect({ id: 'select:reject', label: 'reject' }, session)
+    await command.ui.onSecondaryAction?.({ id: 'ignored', label: 'ignored' }, session)
+    await command.ui.onSecondaryAction?.({ id: 'select:interview', label: 'interview' }, session)
+
     expect(h.calls).toEqual(expect.arrayContaining([
-      'select:interview', 'select:reject',
+      'select:interview', 'select:reject', 'read:interview',
     ]))
-    expect(h.openedTabs.length).toBeGreaterThanOrEqual(3)
+    expect(h.openedTabs.length).toBeGreaterThanOrEqual(4)
   })
 
   it('exposes Sidebar, welcome, action, and settlement callbacks over one store', async () => {

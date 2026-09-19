@@ -168,6 +168,8 @@ export function apply(ctx: ClientContext): void {
               id: `select:${expert.id}`,
               label: expert.name,
               detail: t('expert.version', { version: expert.currentVersion }),
+              detailPlacement: 'inline' as const,
+              secondaryAction: { label: t('expert.edit', { name: expert.name }) },
             })),
           ]
         },
@@ -185,6 +187,13 @@ export function apply(ctx: ClientContext): void {
           if (!option.id.startsWith('select:')) return
           const refusal = await experts.select(session.sessionId, option.id.slice('select:'.length))
           if (refusal !== undefined) expertScope.sidebarRight.openTab(EXPERT_TAB_KIND)
+        },
+        // The row's edit control opens the expert's editor without selecting
+        // it, so a glance at one expert's prompt never switches the session.
+        async onSecondaryAction(option, session) {
+          if (!option.id.startsWith('select:')) return
+          await experts.beginEdit(session.sessionId, option.id.slice('select:'.length))
+          expertScope.sidebarRight.openTab(EXPERT_TAB_KIND)
         },
       },
     }), 'ui-agent-preset: expert command menu')

@@ -120,6 +120,32 @@ describe('ui-settings-plugins apply', () => {
     }
   })
 
+  // A tab label is registrant code read inside this snapshot. One thrower used
+  // to take the whole projection with it, which the page renders as "no plugin
+  // views" — identical to a deployment that ships none.
+  it('projects every other tab when one contributor label throws', async () => {
+    const { ctx, slots } = await bench()
+    declareRoot(slots)
+    await ctx.plugin({ inject: [...inject], apply }).await()
+
+    const section = slots.entries('settings.section')[0]!
+    const sectionFace = (section.inject as unknown as () => PluginsSettingsSectionInjected)()
+    const logged = vi.spyOn(ctx.logger, 'error').mockImplementation(() => {})
+    slots.register({
+      name: 'settings.plugins.tab', id: 'broken', order: 1,
+      label: () => { throw new Error('label exploded') },
+    } as never, () => null)
+    slots.register({
+      name: 'settings.plugins.tab', id: 'sound', order: 2, label: () => 'Sound',
+    } as never, () => null)
+
+    expect(sectionFace.hooks.tabs.getSnapshot()).toEqual([
+      { id: 'broken', order: 1, label: 'broken' },
+      { id: 'sound', order: 2, label: 'Sound' },
+    ])
+    expect(logged).toHaveBeenCalledOnce()
+  })
+
   it('registers one configuration page per served namespace, in its own order, titled in the active locale', async () => {
     const { ctx, slots } = await bench(['web-search-deepseek', 'shell', 'agent-loop', 'subagent-model-selection'])
     declareRoot(slots)

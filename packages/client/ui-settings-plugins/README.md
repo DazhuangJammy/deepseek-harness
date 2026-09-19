@@ -57,7 +57,7 @@ The package is one registration rule and one write path: each page is registered
 
 ### The registration rule
 
-The section declares `settings.plugins.tab`, a root list slot whose labels become ordered tabs; a lone contribution renders as the page itself, and a tab stays mounted after its first selection so search and the inventory snapshot survive switching. The configuration pages are `plugins.item` registrations, one per namespace, made through `ctx.slots.inject` when the shared settings mirror shows the Host serves the namespace and disposed when it stops; registration order is the page order, not the Host's description order, which follows plugin activation and can change between boots. A page owns its controls and copy; the Plugins page draws its title, icon, and crumb.
+The section declares `settings.plugins.tab`, a root list slot whose labels become ordered tabs; a lone contribution renders as the page itself, and a tab stays mounted after its first selection so search and the inventory snapshot survive switching. Reading the tab list resolves each contributor's label, so a label that throws is contained to its own row — the row falls back to its id and the failure is logged, because one broken contributor must not render the page as a deployment that ships no tabs at all. The configuration pages are `plugins.item` registrations, one per namespace, made through `ctx.slots.inject` when the shared settings mirror shows the Host serves the namespace and disposed when it stops; registration order is the page order, not the Host's description order, which follows plugin activation and can change between boots. A page owns its controls and copy; the Plugins page draws its title, icon, and crumb.
 
 ### The write path
 

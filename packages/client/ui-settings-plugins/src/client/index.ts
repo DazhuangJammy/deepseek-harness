@@ -160,12 +160,19 @@ export function apply(ctx: ClientContext): void {
             tabsVersion = version
             tabsRevision = revision
             tabs = ctx.slots.entries('settings.plugins.tab')
-              .map(entry => ({
+              .map((entry) => {
                 /* v8 ignore next -- list-slot registration requires id */
-                id: entry.options.id ?? '',
-                order: entry.options.order ?? 0,
-                label: resolveSlotLabel(entry.options.label) ?? '',
-              }))
+                const id = entry.options.id ?? ''
+                const order = entry.options.order ?? 0
+                try {
+                  return { id, order, label: resolveSlotLabel(entry.options.label) ?? '' }
+                } catch (error) {
+                  // One contributor's label must not erase every other tab: the
+                  // row keeps its id as the label and the failure is reported.
+                  ctx.logger.error(`ui-settings-plugins: label for tab "${id}" failed`, error)
+                  return { id, order, label: id }
+                }
+              })
               .sort((a, b) => a.order - b.order)
           }
           return tabs

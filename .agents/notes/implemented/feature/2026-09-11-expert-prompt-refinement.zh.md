@@ -34,7 +34,7 @@ Status: implemented
 
 ## 后果
 
-专家在组装与 Session 重建方面使用普通 agent-preset 机制，但产品界面只通过专家端点列出它们。[逐 Session preset 决策](../architecture/2026-08-03-per-session-agent-presets.zh.md)与[聊天文件能力决策](2026-09-11-chat-file-capabilities.zh.md)分别负责这些机制。
+专家在组装与 Session 重建方面使用普通 agent-preset 机制，但产品界面只通过专家端点列出它们。已归档的[逐 Session preset 决策](../../archived/architecture/2026-08-03-per-session-agent-presets.md)与[聊天文件能力决策](2026-09-11-chat-file-capabilities.zh.md)分别负责这些机制。
 
 子 Agent 只在用户主动优化时增加一次独立的 `standard` preset 模型运行。它的完整输入、skill 注入与输出都位于子 Session，不进入父级对话。保存或确认版本会修改目标 Session 的提示词前缀，因此提供方缓存复用会从该提示词重新开始。其他已打开 Session 保持自己已经安装的提示词；新 Session 与普通分支使用已提交的当前版本，恢复的 Session 则重建自己最后应用的版本。
 

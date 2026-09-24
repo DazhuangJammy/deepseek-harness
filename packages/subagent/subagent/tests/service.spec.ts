@@ -3,6 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { type Agent } from '@deepseek-ai/dsh-agent'
 
 import { createUserMessage, HarnessError, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { carrierKeyOf } from '@deepseek-ai/dsh-scope'
 import SubagentRuntime, {
   foldSubagentDescriptor,
@@ -20,6 +21,13 @@ import SubagentRuntime, {
 } from '@deepseek-ai/dsh-subagent'
 import { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+
+// A producer declares its own source kind; the catch-all `plugin` kind is gone.
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'subagent-fixture': { kind: 'subagent-fixture' } & ContextFormed
+  }
+}
 
 function fakeParent(id = 'parent-1'): Agent {
   return { id: SessionId(id) } as unknown as Agent
@@ -187,7 +195,7 @@ describe('SubagentRuntime', () => {
     ['agentOptions', { agentOptions: { model: 'child-model' } }],
     ['promptContext', { promptContext: createUserMessage({
       content: [{ type: 'text', text: 'context' }],
-      source: { kind: 'plugin', plugin: 'test' },
+      source: { kind: 'subagent-fixture' },
     }) }],
     ['outputSchema', { outputSchema: { type: 'object', properties: {} } }],
     ['depthLimit', { maxDepth: 1 }],
@@ -280,7 +288,7 @@ describe('SubagentRuntime', () => {
     const parentSession = Session.create(SessionId('catalog-parent'))
     const childSession = Session.create(SessionId('catalog-child'))
     const parent = { id: parentSession.id, session: parentSession } as Agent
-    const localAgent = { id: childSession.id, session: childSession } as Agent
+    const localAgent = { id: childSession.id, session: childSession, options: {} } as Agent
     const result = Promise.withResolvers<SubagentResult>()
     const cleanupFailure = new Error('dispose also failed')
     const warnings = vi.spyOn(ctx.logger, 'warn')

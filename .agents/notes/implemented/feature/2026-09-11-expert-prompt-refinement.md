@@ -34,7 +34,7 @@ A candidate writes nothing. The browser reuses the existing conversation view to
 
 ## Consequences
 
-Experts use the ordinary agent-preset mechanism for composition and Session reconstruction, but only the expert endpoints list them to product surfaces. The [per-Session preset decision](../architecture/2026-08-03-per-session-agent-presets.md) and [Chat file-capability decision](2026-09-11-chat-file-capabilities.md) own those mechanisms.
+Experts use the ordinary agent-preset mechanism for composition and Session reconstruction, but only the expert endpoints list them to product surfaces. The archived [per-Session preset decision](../../archived/architecture/2026-08-03-per-session-agent-presets.md) and [Chat file-capability decision](2026-09-11-chat-file-capabilities.md) own those mechanisms.
 
 The child Agent adds a separate `standard`-preset model run only when a person invokes refinement. Its full input, skill injection, and output live in the child Session rather than the parent conversation. Saving or accepting a version changes the addressed Session's prompt prefix and therefore restarts provider cache reuse from that prompt. Other open Sessions keep their installed prompt; new Sessions and ordinary branches use the committed current version, and resumed Sessions restore their last applied version.
 

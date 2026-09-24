@@ -1,4 +1,5 @@
 import { ToolCallId, createUserMessage } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { type Agent, type AgentOptions } from '@deepseek-ai/dsh-agent'
@@ -13,6 +14,13 @@ import SubagentRuntime, { snapshotSubagentDescriptor } from '@deepseek-ai/dsh-su
 import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import { maxTokensResponse, MockAdapter, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import { startInProcessRun } from '../src/index.ts'
+
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'late-metadata': { kind: 'late-metadata' } & ContextFormed
+    'prompt-context-fixture': { kind: 'prompt-context-fixture' } & ContextFormed
+  }
+}
 
 type Script = ConstructorParameters<typeof MockAdapter>[0]
 
@@ -71,7 +79,7 @@ describe('startInProcessRun', () => {
     const { ctx, parent } = await setup([textResponse('driver answer')])
     const promptContext = createUserMessage({
       content: [{ type: 'text', text: 'private optimization evidence' }],
-      source: { kind: 'plugin', plugin: 'expert-prompt-refiner' },
+      source: { kind: 'prompt-context-fixture' },
     })
     const run = await startInProcessRun({ ...request(parent), promptContext }, {})
     await run.result
@@ -79,7 +87,7 @@ describe('startInProcessRun', () => {
       .filter(event => event.type === 'user/message')
 
     expect(messages.slice(0, 2).map(event => event.data.source)).toEqual([
-      { kind: 'plugin', plugin: 'expert-prompt-refiner' },
+      { kind: 'prompt-context-fixture' },
       { kind: 'user' },
     ])
     expect(messages[0]?.data.content).toEqual(promptContext.content)
@@ -174,7 +182,7 @@ describe('startInProcessRun', () => {
       injected = true
       session.append('user/message', createUserMessage({
         content: [{ type: 'text', text: 'late metadata' }],
-        source: { kind: 'plugin', plugin: 'late-metadata' },
+        source: { kind: 'late-metadata' },
       }), { surfaceOp: 'append' })
     })
 

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { BrandWordmark, Button, FishLogo, IconChevronDownOutline14, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { BrandWordmark, Button, FishLogo, IconChevronDownOutlineRegular, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SidebarBrandMarkOwnerProps } from '@deepseek-ai/dsh-client-ui-sidebar/client'
@@ -98,7 +98,7 @@ export function BrandSettingsCard({ t, useBrand, useEditor, edit, save, reset }:
           <span className={css.description}>{t('description')}</span>
         </span>
         {dirty && <Tag tone="neutral" className={css.pending}>{t('unsaved')}</Tag>}
-        <IconChevronDownOutline14 className={`${css.chevron}${open ? ` ${css.chevronOpen}` : ''}`} aria-hidden />
+        <IconChevronDownOutlineRegular size={14} className={`${css.chevron}${open ? ` ${css.chevronOpen}` : ''}`} aria-hidden />
       </button>
       {open && <div className={css.body}>
         <label className={css.toggle}>

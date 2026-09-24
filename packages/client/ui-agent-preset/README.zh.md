@@ -31,7 +31,9 @@ kind: "package-reference"
 
 ### 管理名单
 
-设置分区把名单呈现为卡片：复制对话框是创建 preset 的唯一入口——浏览器不编辑任何组装文本——每张自定义卡片都保留一个打开 preset 自身文件的位置动作。可见性开关只决定已保存的用户默认值是否生效：宿主在隐藏期间使用部署默认值，再次显示选择器时恢复已保存的默认值。选择器开启期间，选择健康且非默认的卡片会为后续会话写入新的用户默认值；如果当前新任务页已经复用一个空白会话，这次在设置中的明确选择也会通过既有选择链路把同一 preset 带到这个精确的空白会话。已开始及历史会话保持不变。保存期间开关会被禁用；写入失败时，界面保留先前的偏好并显示错误。隐藏选择器会禁用默认值选择与 Creator 启动，但名单查看、复制、位置和删除仍然可用。删除会移除 preset 目录，而已据其组装的会话继续运行。随附 preset 在只读查看器中打开，不提供位置或删除。名单行携带 `broken` 时渲染为标记卡片，其主体与复制均被禁用，因为损坏 preset 的副本只是另一个损坏 preset；损坏的自定义行保留位置与删除动作，以便修复文件、清掉幽灵目录。卡片正面仍显示 preset 自己的描述——在选择器里，一个包说明符不足以让人采取行动——宿主给出的原因作为工具提示附在徽标上，另有一个视觉隐藏的 alert 将该原因传达给辅助技术，而被禁用的卡片主体无法做到这一点。
+设置分区把名单呈现为两组卡片：先是随附 preset，再是本部署自己声明的那些。每张卡片带有该 preset 的展示文案、它的 id 与标明其状态的徽标；损坏的 preset 还会把宿主给出的原因附在徽标上、工具提示里，以及一个被禁用的卡片主体无法提供的 alert 中。随附文案认识的条目还会提供"模式说明"与"使用方式"，打开该 preset 的策展指引。选择健康且非默认的卡片会为后续会话写入新的用户默认值；如果当前新任务页已经复用一个空白会话，这次在设置中的明确选择也会通过既有选择链路把同一 preset 带到这个精确的空白会话。已开始及历史会话保持不变。只有在选择器可见时才提供选择，且策略写入进行中卡片会被禁用；写入失败时，界面保留先前的偏好并显示错误。损坏的 preset 完全无法被选中。
+
+读取声明是这个页面在"选择"之外提供的唯一能力：每张卡片都保留一个查看动作，在只读对话框中把该 preset 声明的子插件列表以 YAML 呈现；损坏的 preset 同样可读，因为那份声明正是其诊断所指之处。当部署组装了草稿所需的对话流程时，自定义分组末尾会出现 Creator 模式入口，它上台自引用的 `cordis` preset 并开始一个新任务，在选择器启用前保持禁用。
 
 ### 对话式入口
 
@@ -51,7 +53,7 @@ kind: "package-reference"
 <details>
 <summary>实现细节——点击展开</summary>
 
-设置分区通过现有的 `settings.update` 写入宿主的 `agent-presets` 命名空间。可见性开关只设置 `modeSelectionEnabled`；仅当选择器显示时，设为默认动作才会写入 `default`。两种写入之后，都由宿主名单给出当前生效的默认值，再由 chip controller 的 `agentPresets/select` 链路把它带到同一个仍为空白的会话；专家选择复用同一条受保护路径。展示选项与宿主的生效可见性来自 `agentPresets/list`，专家管理则使用 typed 专家端点和一个共享浏览器 store。专家 store 按 Session 保存优化状态，因此两个打开的对话不会交换候选稿。优化期间，store 以 `controllerOperation` 保留观察到的那一代子级 Session，而不改变当前选中的主 Session；renderer 注入的 `FixedSessionSlotView` 再把既有对话槽位绑定到该保留引用，一旦离开运行状态就释放。既有指令菜单负责专家搜索与选择，右侧栏负责管理与检查。[`dsh-client-connection`](../connection/README.zh.md) 使用同一浏览器会话认证全部这些宿主方法。分区在自身操作、`settings/document-updated` 与 `connection/reset` 时重读，因为普通组装文件仍可能在浏览器之外编辑。
+设置分区通过现有的 `settings.update` 写入宿主的 `agent-preset-registry` 命名空间。可见性开关只设置 `modeSelectionEnabled`；仅当选择器显示时，设为默认动作才会写入 `default`。两种写入之后，都由宿主名单给出当前生效的默认值，再由 chip controller 的 `agentPresets/select` 链路把它带到同一个仍为空白的会话；专家选择复用同一条受保护路径。展示选项与宿主的生效可见性来自 `agentPresets/list`，专家管理则使用 typed 专家端点和一个共享浏览器 store。专家 store 按 Session 保存优化状态，因此两个打开的对话不会交换候选稿。优化期间，store 以 `controllerOperation` 保留观察到的那一代子级 Session，而不改变当前选中的主 Session；renderer 注入的 `FixedSessionSlotView` 再把既有对话槽位绑定到该保留引用，一旦离开运行状态就释放。既有指令菜单负责专家搜索与选择，右侧栏负责管理与检查。[`dsh-client-connection`](../connection/README.zh.md) 使用同一浏览器会话认证全部这些宿主方法。分区在自身操作、`settings/document-updated` 与 `connection/reset` 时重读。
 
 </details>
 
@@ -62,7 +64,7 @@ kind: "package-reference"
 
 当 preset 界面无法满足需求时，请阅读以下页面。它们从浏览器界面延伸至 preset 领域与组装模型。
 
-- [dsh-agent-presets](../../preset/agent-presets/README.zh.md)——这些界面读取并管理的宿主名单与组装。
+- [dsh-agent-preset-registry](../../preset/agent-preset-registry/README.zh.md)——这些界面读取的宿主注册表与组装。
 - [ui-conversation](../ui-conversation/README.zh.md)——声明 chip 与标签填充的首屏与会话头部槽位。
 - [ui-settings](../ui-settings/README.zh.md)——承载名单分区的设置外壳。
 - [客户端包映射](../README.zh.md)——相邻的浏览器 UI 包。
@@ -72,7 +74,7 @@ kind: "package-reference"
 <a id="model-experience"></a>
 ## 模型体验
 
-间接地，通过所选 preset 和 [`dsh-agent-presets`](../../preset/agent-presets/README.zh.md) 所记录的一次性子 Agent 影响模型；进度与对比渲染自身不会增加任何模型可见内容。
+间接地，通过所选 preset 和 [`dsh-agent-preset-registry`](../../preset/agent-preset-registry/README.zh.md) 所记录的一次性子 Agent 影响模型；进度与对比渲染自身不会增加任何模型可见内容。
 
 #### KV Cache 影响
 
@@ -85,9 +87,8 @@ kind: "package-reference"
 
 这些限制界定了当前 preset 界面。它们是当前包约束，不是通用组装对比或任务积压。
 
-- **没有元数据的 preset 按 id 列出**——展示文本是可选的，未取名的副本刻意回退到目录名，而不是与其来源呈现得一模一样。解析本身使用 [`dsh-agent-presets/display`](../../preset/agent-presets/README.zh.md) 共享的 `presetDisplayText` 解析逻辑，设置的插件列表把它内联在本插件的字典之上，按当前语言显示随附 preset 的名称，同时不翻译用户自建的元数据。
-- **展示的路径是文本，不是链接**——宿主没有桌面打开器时，卡片显示目录供手工复制；浏览器自身无法打开宿主文件系统上的位置。
-- **组装编辑对页面不可见**——文件在浏览器之外编辑，协议链路不广播文件变动，因此名单只在自身操作、`settings/document-updated` 与 `connection/reset` 时重读，而非每次磁盘编辑。
+- **未发布元数据的 preset 按 id 列出**——展示文本是可选的，因此什么都没命名的声明刻意回退到它的 id，而不是与其来源呈现得一模一样。解析本身使用 [`dsh-agent-preset-registry/display`](../../preset/agent-preset-registry/README.zh.md) 共享的 `presetDisplayText` 解析逻辑，设置的插件列表把它内联在本插件的字典之上，按当前语言显示随附 preset 的名称，同时不翻译用户自建的元数据。
+- **这个页面是读者，不是作者**——浏览器不组装任何 preset：它选择默认值、切换选择器可见性、读取声明。编写发生在浏览器之外的组装文件里，因此名单只在本页自身操作、`settings/document-updated` 与 `connection/reset` 时重读，协议链路也不会广播磁盘编辑。
 
 <a id="dev-note"></a>
 ### 开发备注

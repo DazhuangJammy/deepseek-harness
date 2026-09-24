@@ -31,7 +31,9 @@ The shipped roster contains `standard`, `ptc`, `minimal`, `cordis`, and `chat`. 
 
 ### Managing the roster
 
-The settings section shows the roster as cards: a copy dialog is the only way a preset is created — the browser edits no composition text — and every custom card keeps a location action that opens the preset's own files. The visibility switch changes only whether the saved user default is active: the Host uses the deployment default while hidden and restores the saved default when the picker is shown again. While the picker is enabled, choosing a healthy non-default card writes a new user default for later sessions; if the current new-task surface already reuses a blank session, that explicit Settings action carries the same preset to that exact blank session through the existing selection path. Started and historical sessions remain unchanged. The switch is disabled while saving, and a failed write keeps the prior preference and shows an error. Hiding the picker disables default selection and the Creator launch but leaves roster viewing, copying, location, and deletion available. Deleting removes the preset directory while sessions already composed from it keep running. A shipped preset opens in a read-only viewer and offers no location or delete. A roster row carrying `broken` renders as a marked card whose body and duplication are disabled, because a copy of a broken preset is another broken preset; broken custom rows keep their location and delete actions so the files can be fixed and ghost directories cleared. The card face still shows the preset's own description — a chooser cannot act on a package specifier there — and the host's reason rides the badge as a tooltip, plus a visually hidden alert that carries it to assistive technology, which a disabled card body cannot.
+The settings section lists the roster as cards in two groups: shipped presets first, then the ones this deployment declared itself. Each card carries the preset's display copy, its id, and a badge naming its state, and a broken preset adds the host's reason on the badge, in a tooltip, and in an alert the disabled card body cannot carry. A row the shipped copy knows about also offers Mode explanation and How to use, which open that preset's curated guidance. Choosing a healthy non-default card makes it the user default for later sessions; if the current new-task surface already reuses a blank session, that explicit Settings action carries the same preset to that exact blank session through the existing selection path. Started and historical sessions remain unchanged. Selection is offered only while the picker is visible, and a card is disabled while a policy write is in flight; a failed write keeps the prior preference and shows an error. A broken preset cannot be selected at all.
+
+Reading a declaration is the one thing this page offers beyond choosing: every card keeps a viewer action that opens the preset's declared child plugin list as YAML in a read-only dialog, and a broken preset stays readable because that declaration is where its diagnostic points. The Custom group ends with a Creator-mode entry whenever the deployment composes the conversation flow the draft needs; it stages the self-referential `cordis` preset and starts a new task, and stays disabled until the picker is enabled.
 
 ### The conversational entry
 
@@ -51,7 +53,7 @@ Each finalized assistant message in an expert Session carries an Optimize expert
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The settings section writes the Host's existing `agent-presets` namespace through `settings.update`. Its visibility switch sets only `modeSelectionEnabled`, and its make-default action writes `default` only while the picker is shown. After either write, the Host roster supplies the effective default, and the chip controller's `agentPresets/select` path carries it to the same still-blank session; expert selection uses that same guarded path. Display options and Host-effective visibility come from `agentPresets/list`, while expert management uses the typed expert endpoints and one shared browser store. The expert store keys optimization state by Session, so two open conversations cannot exchange candidates. During optimization, the store retains the observed child generation under `controllerOperation` without changing the selected main Session, and the renderer-injected `FixedSessionSlotView` binds the existing conversation slot to that retained reference; every exit from the running state releases it. The existing command menu owns expert search and selection; the right Sidebar owns management and review. [`dsh-client-connection`](../connection/README.md) authenticates all of these Host methods with the same browser session. The section re-reads on its own actions, `settings/document-updated`, and `connection/reset`, because ordinary composition files may still be edited outside the browser.
+The settings section writes the Host's existing `agent-preset-registry` namespace through `settings.update`. Its visibility switch sets only `modeSelectionEnabled`, and its make-default action writes `default` only while the picker is shown. After either write, the Host roster supplies the effective default, and the chip controller's `agentPresets/select` path carries it to the same still-blank session; expert selection uses that same guarded path. Display options and Host-effective visibility come from `agentPresets/list`, while expert management uses the typed expert endpoints and one shared browser store. The expert store keys optimization state by Session, so two open conversations cannot exchange candidates. During optimization, the store retains the observed child generation under `controllerOperation` without changing the selected main Session, and the renderer-injected `FixedSessionSlotView` binds the existing conversation slot to that retained reference; every exit from the running state releases it. The existing command menu owns expert search and selection; the right Sidebar owns management and review. [`dsh-client-connection`](../connection/README.md) authenticates all of these Host methods with the same browser session. The section re-reads on its own actions, `settings/document-updated`, and `connection/reset`.
 
 </details>
 
@@ -62,7 +64,7 @@ The settings section writes the Host's existing `agent-presets` namespace throug
 
 Read these pages when the preset surface is not enough. They move from the browser surfaces to the preset domain and the composition model.
 
-- [dsh-agent-presets](../../preset/agent-presets/README.md) — the host roster and composition the surfaces read and manage.
+- [dsh-agent-preset-registry](../../preset/agent-preset-registry/README.md) — the host registry and composition the surfaces read.
 - [ui-conversation](../ui-conversation/README.md) — declares the hero and session-header slots the chip and label fill.
 - [ui-settings](../ui-settings/README.md) — the settings shell that hosts the roster section.
 - [Client package map](../README.md) — adjacent browser UI packages.
@@ -72,7 +74,7 @@ Read these pages when the preset surface is not enough. They move from the brows
 <a id="model-experience"></a>
 ## Model Experience
 
-Indirectly, through the selected preset and the one-shot child Agent documented by [`dsh-agent-presets`](../../preset/agent-presets/README.md); progress and comparison rendering add no model-visible content of their own.
+Indirectly, through the selected preset and the one-shot child Agent documented by [`dsh-agent-preset-registry`](../../preset/agent-preset-registry/README.md); progress and comparison rendering add no model-visible content of their own.
 
 #### KV Cache effect
 
@@ -85,9 +87,8 @@ Changing picker visibility, defaults, unsaved editor fields, or an unaccepted ca
 
 These limits define the current preset surfaces. They are current package constraints, not a general composition comparison or a task backlog.
 
-- **A preset without metadata is listed by id** — display text is optional, and a copy given no name deliberately falls back to its directory name rather than presenting itself identically to its source. The resolution itself is the shared `presetDisplayText` fold from [`dsh-agent-presets/display`](../../preset/agent-presets/README.md), which the Settings plugin list inlines over this plugin’s dictionaries to show shipped presets in the active locale without translating user-authored metadata.
-- **A revealed path is display text, not a link** — where the host has no desktop opener the row shows the directory to copy by hand; the browser cannot open a host filesystem location itself.
-- **Composition edits are invisible to the page** — the files are edited outside the browser and nothing on the wire announces a file change, so the roster re-reads on its own actions, `settings/document-updated`, and `connection/reset`, not on every disk edit.
+- **A preset that publishes no metadata is listed by id** — display text is optional, so a declaration that names nothing deliberately falls back to its id rather than presenting itself identically to its source. The resolution itself is the shared `presetDisplayText` fold from [`dsh-agent-preset-registry/display`](../../preset/agent-preset-registry/README.md), which the Settings plugin list inlines over this plugin’s dictionaries to show shipped presets in the active locale without translating user-authored metadata.
+- **The page is a reader, not an author** — the browser composes no preset: it selects a default, toggles picker visibility, and reads declarations. Authoring happens in a composition file outside the browser, so the roster re-reads on this page's own actions, `settings/document-updated`, and `connection/reset`, and nothing on the wire announces a disk edit.
 
 <a id="dev-note"></a>
 ### Dev Note

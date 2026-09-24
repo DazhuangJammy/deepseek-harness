@@ -2,7 +2,7 @@
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import { brandString } from '@deepseek-ai/dsh-brand'
-import type { ExpertDocument, ExpertOptimizationOutcome, ExpertProposalId } from '@deepseek-ai/dsh-agent-presets/types'
+import type { ExpertDocument, ExpertOptimizationOutcome, ExpertProposalId } from '@deepseek-ai/dsh-agent-preset-registry/types'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { describe, expect, it } from 'vitest'

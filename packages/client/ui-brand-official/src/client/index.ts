@@ -1,7 +1,10 @@
 /** Official DeepSeek Harness occupants for the generic browser-brand slots. */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+// Type-only: the ctx.configForms Context merge and the shared form contract.
+// Cross-plugin collaboration goes through the service, never a value import
+// (client bundle purity gate).
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
@@ -17,6 +20,11 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap { 'ui-brand-official': BrandLocaleKey }
 }
 
+/**
+ * Own the custom-brand preference for the browser: one derived view over the
+ * shared describe mirror, the staged editor state the Settings card renders,
+ * and the serialized writes that reach the Host.
+ */
 class BrandController {
   readonly store: SnapshotStore<BrandSettings>
   readonly editor: SnapshotStore<BrandEditorState>
@@ -24,27 +32,31 @@ class BrandController {
   private dirty = false
   private saving = false
   private failed = false
-  private readonly scope: SettingsScope<BrandSettings> | undefined
+  private readonly form: ConfigForm<BrandSettings> | undefined
 
+  /** @param ctx - the owning plugin's context; the form service and the subscription's disposer come from it. */
   constructor(ctx: ClientContext) {
-    const settingsScope = ctx.get('settingsScope')
-    this.scope = settingsScope?.bind<BrandSettings>({ namespace: BRAND_SETTINGS_NAMESPACE })
+    this.form = ctx.get('configForms')?.get<BrandSettings>(BRAND_SETTINGS_NAMESPACE)
     this.store = createSnapshotStore<BrandSettings>({ ...DEFAULT_BRAND_SETTINGS })
     this.editor = createSnapshotStore<BrandEditorState>({
       draft: { ...DEFAULT_BRAND_SETTINGS }, dirty: false, saving: false, failed: false,
     })
-    this.scope?.subscribe(() => {
-      const value = this.scope?.getSnapshot().value
-      if (value !== undefined && !this.dirty) this.draft = { ...value }
-      if (value !== undefined) this.store.set({ ...value })
-      this.publishEditor()
-    })
-    const value = this.scope?.getSnapshot().value
-    if (value !== undefined) {
-      this.draft = { ...value }
-      this.store.set({ ...value })
-      this.editor.set({ draft: this.draft, dirty: false, saving: false, failed: false })
-    }
+    ctx.effect(() => this.form?.subscribe(() => { this.adopt() }) ?? (() => {}), 'ui-brand-official: settings form adoption')
+    this.adopt()
+  }
+
+  /** Adopt the Host's accepted value: the staged draft only while the user is clean. */
+  private adopt(): void {
+    const value = this.form?.getSnapshot().value
+    if (value === undefined) return
+    if (!this.dirty) this.draft = { ...value }
+    this.store.set({ ...value })
+    this.publishEditor()
+  }
+
+  /** Whether one settlement is a failure: a refused *durable* write is, a process-local one is not. */
+  private refusalFailed(): boolean {
+    return this.form?.getSnapshot().mode === 'host'
   }
 
   face() {
@@ -71,20 +83,21 @@ class BrandController {
     this.failed = false
     this.publishEditor()
     try {
-      if (this.scope === undefined) {
+      if (this.form === undefined) {
         this.dirty = false
       } else {
-        await this.scope.mutate([
+        const accepted = await this.form.mutate([
           { op: 'set', path: ['enabled'], value: this.draft.enabled },
           { op: 'set', path: ['name'], value: this.draft.name.trim() },
           { op: 'set', path: ['icon'], value: this.draft.icon.trim() },
         ])
-        const value = this.scope.getSnapshot().value
+        const value = this.form.getSnapshot().value
         if (value !== undefined) {
           this.draft = { ...value }
           this.store.set({ ...value })
         }
         this.dirty = false
+        this.failed = !accepted && this.refusalFailed()
       }
     } catch {
       this.failed = true
@@ -99,18 +112,19 @@ class BrandController {
     this.failed = false
     this.publishEditor()
     try {
-      if (this.scope === undefined) {
+      if (this.form === undefined) {
         this.dirty = false
       } else {
-        await this.scope.mutate([
+        const accepted = await this.form.mutate([
           { op: 'unset', path: ['enabled'] },
           { op: 'unset', path: ['name'] },
           { op: 'unset', path: ['icon'] },
         ])
-        const value = this.scope.getSnapshot().value ?? DEFAULT_BRAND_SETTINGS
+        const value = this.form.getSnapshot().value ?? DEFAULT_BRAND_SETTINGS
         this.draft = { ...value }
         this.store.set({ ...value })
         this.dirty = false
+        this.failed = !accepted && this.refusalFailed()
       }
     } catch {
       this.failed = true
@@ -131,9 +145,10 @@ export const inject = ['slots']
  * @param ctx - Client root context.
  */
 export function apply(ctx: ClientContext): void {
-  // Lightweight hosts without SettingsScope retain the historical profile
-  // gate; the assembled Web client always has the scope and can configure it.
-  if (ctx.get('settingsScope') === undefined && process.env.DSH_CLIENT_BUILD_PROFILE !== 'official') return
+  // Lightweight hosts without the configuration forms retain the historical
+  // profile gate; the assembled Web client always has the service and can
+  // configure the brand.
+  if (ctx.get('configForms') === undefined && process.env.DSH_CLIENT_BUILD_PROFILE !== 'official') return
   const shipped = process.env.DSH_CLIENT_BUILD_PROFILE === 'official'
   const controller = new BrandController(ctx)
   ctx.effect(() => {

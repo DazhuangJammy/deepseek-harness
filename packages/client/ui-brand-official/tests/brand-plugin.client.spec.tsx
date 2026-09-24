@@ -1,8 +1,8 @@
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
-import type { StubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
+import { stubConfigForm } from '@deepseek-ai/dsh-client-test-runtime'
+import type { StubConfigForm } from '@deepseek-ai/dsh-client-test-runtime'
 import { apply, inject } from '../src/client/index.ts'
 import { BRAND_SETTINGS_NAMESPACE, DEFAULT_BRAND_SETTINGS } from '../src/brand-settings.ts'
 import type { BrandSettings } from '../src/brand-settings.ts'
@@ -28,8 +28,8 @@ const CHILDREN = {
 interface BenchOptions {
   /** Build profile read by the optional-service gate. */
   env?: string
-  /** Settings-scope service under test; omit for the lightweight host. */
-  settingsScope?: unknown
+  /** Configuration-forms service under test; omit for the lightweight host. */
+  configForms?: unknown
   /** Locale service under test; omit to exercise the no-dictionary arm. */
   locale?: unknown
   /** Declare the brand slots before apply (default true). */
@@ -46,7 +46,7 @@ async function bench(options: BenchOptions = {}): Promise<Bench> {
   if (options.env !== undefined) vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', options.env)
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
-  if (options.settingsScope !== undefined) ctx.provide('settingsScope', options.settingsScope as never)
+  if (options.configForms !== undefined) ctx.provide('configForms', options.configForms as never)
   if (options.locale !== undefined) ctx.provide('locale', options.locale as never)
   const slots = ctx.get('slots') as SlotRegistry
   const declare = (): void => {
@@ -74,27 +74,34 @@ function controllerFace(subject: Bench): BrandFace {
   return faceOf(subject.slots, 'settings.plugins.tab')
 }
 
-/** Provide a scope binder and record the namespace each bind asked for. */
-function settingsService(scope: StubSettingsScope<BrandSettings>) {
-  const bind = vi.fn(() => scope.scope)
-  return { bind, service: { bind } }
+/** Provide the configuration-forms provider and record the entry each lookup asked for. */
+function formsService(form: StubConfigForm<BrandSettings>) {
+  const get = vi.fn(() => form.scope)
+  return { get, service: { get } }
 }
 
-/** Bring up a controller bound to a reachable settings scope. */
-async function withScope(options: { declare?: boolean } = {}) {
-  const scope = stubSettingsScope<BrandSettings>()
-  const settings = settingsService(scope)
-  const subject = await bench({ env: 'local', settingsScope: settings.service, ...options })
+/** Bring up a controller bound to a reachable configuration form. */
+async function withForm(options: { declare?: boolean } = {}) {
+  const form = stubConfigForm<BrandSettings>()
+  const forms = formsService(form)
+  const subject = await bench({ env: 'local', configForms: forms.service, ...options })
   const fiber = await mount(subject)
-  return { scope, settings, subject, fiber }
+  return { form, forms, subject, fiber }
+}
+
+/** Deferred settlement the test releases by hand. */
+function gate(): { promise: Promise<boolean>; release: () => void } {
+  let release!: () => void
+  const promise = new Promise<boolean>((resolve) => { release = () => { resolve(true) } })
+  return { promise, release }
 }
 
 describe('ui-brand-official browser half', () => {
-  it('binds the brand namespace and follows accepted snapshots', async () => {
-    const bound = await withScope({ declare: false })
-    expect(bound.settings.bind).toHaveBeenCalledWith({ namespace: BRAND_SETTINGS_NAMESPACE })
+  it('binds the brand entry and follows accepted snapshots', async () => {
+    const bound = await withForm({ declare: false })
+    expect(bound.forms.get).toHaveBeenCalledWith(BRAND_SETTINGS_NAMESPACE)
 
-    bound.scope.publish({ status: 'ready', value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
+    bound.form.publish({ status: 'ready', value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
     bound.subject.declare()
     await Promise.resolve()
     const face = controllerFace(bound.subject)
@@ -103,41 +110,41 @@ describe('ui-brand-official browser half', () => {
       draft: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' }, dirty: false, saving: false, failed: false,
     })
 
-    bound.scope.publish({ value: { enabled: false, name: 'Zed', icon: '' } })
+    bound.form.publish({ value: { enabled: false, name: 'Zed', icon: '' } })
     expect(face.hooks.brand.getSnapshot()).toEqual({ enabled: false, name: 'Zed', icon: '' })
     expect(face.hooks.editor.getSnapshot().draft).toEqual({ enabled: false, name: 'Zed', icon: '' })
 
     face.edit({ name: 'Pinned' })
-    bound.scope.publish({ value: { enabled: true, name: 'Host', icon: 'https://x/host.png' } })
+    bound.form.publish({ value: { enabled: true, name: 'Host', icon: 'https://x/host.png' } })
     expect(face.hooks.editor.getSnapshot().draft.name).toBe('Pinned')
     expect(face.hooks.brand.getSnapshot().name).toBe('Host')
 
-    bound.scope.publish({ value: undefined })
+    bound.form.publish({ value: undefined })
     expect(face.hooks.editor.getSnapshot().saving).toBe(false)
 
     await bound.fiber.dispose()
   })
 
   it('stages edits locally without writing', async () => {
-    const { scope, subject } = await withScope()
+    const { form, subject } = await withForm()
     const face = controllerFace(subject)
     face.edit({ name: 'New' })
-    expect(scope.mutate).not.toHaveBeenCalled()
+    expect(form.mutate).not.toHaveBeenCalled()
     expect(face.hooks.editor.getSnapshot()).toMatchObject({ dirty: true, failed: false })
     expect(face.hooks.editor.getSnapshot().draft.name).toBe('New')
     expect(face.hooks.brand.getSnapshot().name).toBe(DEFAULT_BRAND_SETTINGS.name)
   })
 
   it('writes the trimmed draft and adopts the accepted snapshot', async () => {
-    const { scope, subject } = await withScope()
+    const { form, subject } = await withForm()
     const face = controllerFace(subject)
 
     face.edit({ enabled: true, name: '  New  ', icon: '  https://x/new.png  ' })
-    scope.publish({ value: { enabled: true, name: 'New', icon: 'https://x/new.png' } })
+    form.publish({ value: { enabled: true, name: 'New', icon: 'https://x/new.png' } })
     face.save()
     await settled()
 
-    expect(scope.mutate).toHaveBeenCalledWith([
+    expect(form.mutate).toHaveBeenCalledWith([
       { op: 'set', path: ['enabled'], value: true },
       { op: 'set', path: ['name'], value: 'New' },
       { op: 'set', path: ['icon'], value: 'https://x/new.png' },
@@ -149,17 +156,17 @@ describe('ui-brand-official browser half', () => {
   })
 
   it('keeps the accepted value when a save publishes nothing new', async () => {
-    const { scope, subject } = await withScope()
+    const { form, subject } = await withForm()
     const face = controllerFace(subject)
     face.edit({ name: 'New' })
     face.save()
     await settled()
-    expect(scope.mutate).toHaveBeenCalledOnce()
+    expect(form.mutate).toHaveBeenCalledOnce()
     expect(face.hooks.editor.getSnapshot()).toMatchObject({ dirty: false, saving: false })
     expect(face.hooks.brand.getSnapshot()).toEqual({ ...DEFAULT_BRAND_SETTINGS })
   })
 
-  it('clears the staged flag without a settings scope on the lightweight host', async () => {
+  it('clears the staged flag without configuration forms on the lightweight host', async () => {
     const subject = await bench({ env: 'official' })
     await mount(subject)
     const face = controllerFace(subject)
@@ -169,28 +176,27 @@ describe('ui-brand-official browser half', () => {
   })
 
   it('skips a save that is clean or already in flight', async () => {
-    const { scope, subject } = await withScope()
+    const { form, subject } = await withForm()
     const face = controllerFace(subject)
     face.save()
-    expect(scope.mutate).not.toHaveBeenCalled()
+    expect(form.mutate).not.toHaveBeenCalled()
 
-    let release!: () => void
-    const gate = new Promise<void>((resolve) => { release = resolve })
-    scope.mutate.mockReturnValue(gate)
+    const pending = gate()
+    form.mutate.mockReturnValue(pending.promise)
     face.edit({ name: 'New' })
     face.save()
     face.save()
-    expect(scope.mutate).toHaveBeenCalledOnce()
+    expect(form.mutate).toHaveBeenCalledOnce()
 
-    release()
+    pending.release()
     await settled()
     expect(face.hooks.editor.getSnapshot().saving).toBe(false)
   })
 
   it('reports a failed save until the next edit', async () => {
-    const { scope, subject } = await withScope()
+    const { form, subject } = await withForm()
     const face = controllerFace(subject)
-    scope.mutate.mockImplementation(() => { throw new Error('denied') })
+    form.mutate.mockImplementation(() => { throw new Error('denied') })
 
     face.edit({ name: 'New' })
     face.save()
@@ -201,14 +207,37 @@ describe('ui-brand-official browser half', () => {
     expect(face.hooks.editor.getSnapshot()).toMatchObject({ failed: false, dirty: true })
   })
 
+  it('reports a write the Host refused', async () => {
+    const { form, subject } = await withForm()
+    const face = controllerFace(subject)
+    form.mutate.mockResolvedValue(false)
+
+    face.edit({ name: 'New' })
+    face.save()
+    await settled()
+    expect(face.hooks.editor.getSnapshot()).toMatchObject({ failed: true, saving: false, dirty: false })
+  })
+
+  it('does not report a process-local write as failed', async () => {
+    const { form, subject } = await withForm()
+    const face = controllerFace(subject)
+    form.publish({ mode: 'memory' })
+    form.mutate.mockResolvedValue(false)
+
+    face.edit({ name: 'New' })
+    face.save()
+    await settled()
+    expect(face.hooks.editor.getSnapshot()).toMatchObject({ failed: false, saving: false, dirty: false })
+  })
+
   it('restores the accepted value or the defaults on reset', async () => {
-    const accepted = await withScope()
-    const acceptedScope = accepted.scope
+    const accepted = await withForm()
+    const acceptedForm = accepted.form
     const acceptedFace = controllerFace(accepted.subject)
-    acceptedScope.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
+    acceptedForm.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
     acceptedFace.reset()
     await settled()
-    expect(acceptedScope.mutate).toHaveBeenCalledWith([
+    expect(acceptedForm.mutate).toHaveBeenCalledWith([
       { op: 'unset', path: ['enabled'] },
       { op: 'unset', path: ['name'] },
       { op: 'unset', path: ['icon'] },
@@ -216,7 +245,7 @@ describe('ui-brand-official browser half', () => {
     expect(acceptedFace.hooks.brand.getSnapshot()).toEqual({ enabled: true, name: 'Acme', icon: 'https://x/logo.png' })
     expect(acceptedFace.hooks.editor.getSnapshot().dirty).toBe(false)
 
-    const empty = await withScope()
+    const empty = await withForm()
     const emptyFace = controllerFace(empty.subject)
     emptyFace.reset()
     await settled()
@@ -233,47 +262,46 @@ describe('ui-brand-official browser half', () => {
   })
 
   it('reports a failed reset and ignores one already in flight', async () => {
-    const failing = await withScope()
+    const failing = await withForm()
     const failingFace = controllerFace(failing.subject)
-    failing.scope.mutate.mockImplementation(() => { throw new Error('denied') })
+    failing.form.mutate.mockImplementation(() => { throw new Error('denied') })
     failingFace.reset()
     await settled()
     expect(failingFace.hooks.editor.getSnapshot()).toMatchObject({ failed: true, saving: false })
 
-    const pending = await withScope()
+    const pending = await withForm()
     const pendingFace = controllerFace(pending.subject)
-    let release!: () => void
-    const gate = new Promise<void>((resolve) => { release = resolve })
-    pending.scope.mutate.mockReturnValue(gate)
+    const pendingGate = gate()
+    pending.form.mutate.mockReturnValue(pendingGate.promise)
     pendingFace.reset()
     pendingFace.reset()
-    expect(pending.scope.mutate).toHaveBeenCalledOnce()
-    release()
+    expect(pending.form.mutate).toHaveBeenCalledOnce()
+    pendingGate.release()
     await settled()
     expect(pendingFace.hooks.editor.getSnapshot().saving).toBe(false)
   })
 
   it('registers and withdraws the hero occupants with the accepted brand', async () => {
-    const scope = stubSettingsScope<BrandSettings>()
-    scope.publish({ status: 'ready', value: { ...DEFAULT_BRAND_SETTINGS, enabled: true } })
-    const subject = await bench({ env: 'local', settingsScope: settingsService(scope).service, declare: false })
+    const form = stubConfigForm<BrandSettings>()
+    form.publish({ status: 'ready', value: { ...DEFAULT_BRAND_SETTINGS, enabled: true } })
+    const subject = await bench({ env: 'local', configForms: formsService(form).service, declare: false })
     const fiber = await mount(subject)
     subject.declare()
     await Promise.resolve()
 
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(0)
 
-    scope.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
+    form.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(1)
     const heroFace = faceOf(subject.slots, 'conversation.hero.brand.mark')
     expect(heroFace.hooks.brand.getSnapshot().icon).toBe('https://x/logo.png')
 
-    scope.publish({ value: { enabled: true, name: 'Acme', icon: '' } })
+    form.publish({ value: { enabled: true, name: 'Acme', icon: '' } })
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(0)
 
-    scope.publish({ value: { enabled: false, name: 'Acme', icon: '' } })
+    form.publish({ value: { enabled: false, name: 'Acme', icon: '' } })
 
-    scope.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
+    form.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
     expect(subject.slots.entries('conversation.hero.brand.mark')).toHaveLength(1)
 
     await fiber.dispose()
@@ -281,8 +309,8 @@ describe('ui-brand-official browser half', () => {
   })
 
   it('keeps the sidebar fallback until the official profile or a configured value asks for it', async () => {
-    const scope = stubSettingsScope<BrandSettings>()
-    const subject = await bench({ env: 'local', settingsScope: settingsService(scope).service, declare: false })
+    const form = stubConfigForm<BrandSettings>()
+    const subject = await bench({ env: 'local', configForms: formsService(form).service, declare: false })
     const fiber = await mount(subject)
     subject.declare()
     await Promise.resolve()
@@ -290,17 +318,17 @@ describe('ui-brand-official browser half', () => {
     expect(subject.slots.entries('sidebar.brand.mark')).toHaveLength(0)
     expect(subject.slots.entries('sidebar.brand.name')).toHaveLength(0)
 
-    scope.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
+    form.publish({ value: { enabled: true, name: 'Acme', icon: 'https://x/logo.png' } })
     expect(subject.slots.entries('sidebar.brand.mark')).toHaveLength(1)
     expect(subject.slots.entries('sidebar.brand.name')).toHaveLength(1)
     expect(faceOf(subject.slots, 'sidebar.brand.mark').hooks.brand.getSnapshot().name).toBe('Acme')
     expect(faceOf(subject.slots, 'sidebar.brand.name').hooks.brand.getSnapshot().name).toBe('Acme')
 
-    scope.publish({ value: { enabled: true, name: 'Acme', icon: '' } })
+    form.publish({ value: { enabled: true, name: 'Acme', icon: '' } })
     expect(subject.slots.entries('sidebar.brand.mark')).toHaveLength(0)
     expect(subject.slots.entries('sidebar.brand.name')).toHaveLength(1)
 
-    scope.publish({ value: { enabled: false, name: 'Acme', icon: 'https://x/logo.png' } })
+    form.publish({ value: { enabled: false, name: 'Acme', icon: 'https://x/logo.png' } })
     expect(subject.slots.entries('sidebar.brand.mark')).toHaveLength(0)
     expect(subject.slots.entries('sidebar.brand.name')).toHaveLength(0)
 
@@ -319,9 +347,9 @@ describe('ui-brand-official browser half', () => {
 
   it('registers the dictionaries and the namespace-keyed settings card', async () => {
     const register = vi.fn(() => () => {})
-    const scope = stubSettingsScope<BrandSettings>()
+    const form = stubConfigForm<BrandSettings>()
     const subject = await bench({
-      env: 'local', settingsScope: settingsService(scope).service, locale: { register },
+      env: 'local', configForms: formsService(form).service, locale: { register },
     })
     await mount(subject)
 

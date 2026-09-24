@@ -13,7 +13,7 @@
 import { useEffect, useRef } from 'react'
 import { useSyncExternalStore } from 'react'
 import clsx from 'clsx'
-import { IconCheckOutline16, IconEditOutline16, RiskConfirmation, Tooltip, useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconCheckOutlineRegular, IconEditOutlineRegular, RiskConfirmation, Tooltip, useAnchoredMaxHeight } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { filterOptions } from './popup.ts'
 import type { PopupSelectController } from './popup.ts'
@@ -169,7 +169,7 @@ export function PopupSelectView({ popup, t }: PopupSelectViewProps) {
                       {option.badge !== undefined && <sup className={css.badge}>{option.badge}</sup>}
                     </span>
                     {option.detail !== undefined && <span className={css.detail}>{option.detail}</span>}
-                    {option.active === true && <span className={css.check}><IconCheckOutline16 /></span>}
+                    {option.active === true && <span className={css.check}><IconCheckOutlineRegular /></span>}
                   </>
                 )
                 // A row with any secondary action in the list becomes a
@@ -213,7 +213,7 @@ export function PopupSelectView({ popup, t }: PopupSelectViewProps) {
                           aria-label={option.secondaryAction.label}
                           onClick={() => { void popup.selectSecondary(index) }}
                         >
-                          <IconEditOutline16 size={14} />
+                          <IconEditOutlineRegular size={14} />
                         </button>
                       </Tooltip>
                     )}

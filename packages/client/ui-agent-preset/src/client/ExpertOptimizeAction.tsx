@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { IconEnhanceOutline16, IconLoadingOutline16, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconEnhanceOutlineRegular, IconLoadingOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ExpertUiState } from './expert-store.ts'
 import css from './ExpertOptimizeAction.module.css'
 
@@ -40,7 +40,7 @@ export function ExpertOptimizeAction({
         disabled={running}
         onClick={() => { optimize(messageId) }}
       >
-        {running ? <IconLoadingOutline16 className={css.spinning} /> : <IconEnhanceOutline16 />}
+        {running ? <IconLoadingOutlineRegular className={css.spinning} /> : <IconEnhanceOutlineRegular />}
       </button>
     </Tooltip>
   )

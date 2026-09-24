@@ -6,7 +6,7 @@ import type {
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import { IconLightOutline16, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconLightOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { LearningKey, TermKey } from './locales.ts'
 import css from './LearningView.module.css'
 
@@ -267,7 +267,7 @@ export function LearningView({ useConversation, useSession, t }: ConvViewProps &
   return (
     <main className={css.root}>
       <header className={css.header}>
-        <div className={css.eyebrow}><span className={css.eyebrowIcon}><IconLightOutline16 size={15} /></span>{t('header.eyebrow')}<span className={css.readonly}>{t('readonly')}</span></div>
+        <div className={css.eyebrow}><span className={css.eyebrowIcon}><IconLightOutlineRegular size={15} /></span>{t('header.eyebrow')}<span className={css.readonly}>{t('readonly')}</span></div>
         <h1>{t('graph.title')}</h1>
         <p>{t('graph.description')}</p>
       </header>
@@ -282,7 +282,7 @@ export function LearningView({ useConversation, useSession, t }: ConvViewProps &
       <section className={css.graphSection} aria-labelledby="learning-graph-title">
         <div className={css.graphHeader}><div><h2 id="learning-graph-title">{t('graph.timelineTitle')}</h2><p>{t('graph.timelineDescription')}</p></div><span className={css.graphLegend}>{t('graph.legend')}</span></div>
         {records.length === 0 ? (
-          <div className={css.empty}><span className={css.emptyIcon}><IconLightOutline16 size={18} /></span><strong>{t('records.empty')}</strong><p>{t('records.emptyHint')}</p></div>
+          <div className={css.empty}><span className={css.emptyIcon}><IconLightOutlineRegular size={18} /></span><strong>{t('records.empty')}</strong><p>{t('records.emptyHint')}</p></div>
         ) : (
           <div className={css.eventGraph} role="list">
             {records.map((record, index) => {

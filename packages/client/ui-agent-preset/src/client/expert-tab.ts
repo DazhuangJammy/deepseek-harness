@@ -2,7 +2,7 @@
 
 import type { SidebarRightTabDefinition } from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-locale/client'
-import { IconEnhanceOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconEnhanceOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 
 /** Tab kind opened by expert actions. */
 export const EXPERT_TAB_KIND = 'expert-prompt'
@@ -26,7 +26,7 @@ export function expertTabDefinition(t: TranslateNS<'settings.agentPreset'>): Sid
       order: 30,
       title: () => t('expert.manage'),
       description: () => t('expert.manageHint'),
-      icon: IconEnhanceOutline16,
+      icon: IconEnhanceOutlineRegular,
     }],
   }
 }

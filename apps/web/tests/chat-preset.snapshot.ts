@@ -5,7 +5,7 @@ import type { AgentHandle } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { Session } from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-agent-presets'
+import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import {
   assertFixtureInventory,
@@ -58,8 +58,7 @@ describe('chat agent preset', () => {
       tools: requestHeader.tools?.map(tool => tool.name),
       compaction: scaffold.ctx.agentPresets.serviceFor(agentHandle.agent, 'compaction'),
       runtimeContextMessages: agentHandle.agent.session.snapshotEvents().filter(event => event.type === 'user/message'
-        && event.data.source.kind === 'plugin'
-        && event.data.source.plugin === '@deepseek-ai/dsh-system-prompt').length,
+        && event.data.source.kind === 'runtime-context').length,
     }).toEqual({
       prompt: CHAT_PROMPT,
       tools: ['bash', 'edit', 'glob', 'grep', 'read', 'read_image', 'write'],

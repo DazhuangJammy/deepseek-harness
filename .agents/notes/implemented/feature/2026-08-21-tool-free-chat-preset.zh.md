@@ -36,4 +36,4 @@ Status: implemented
 
 随附 Web 组装测试固定了确切人设、空工具组装、不存在压缩服务，以及包含第一问与第一答的双轮请求。无密钥 Web 快照固定了组装后的聊天配置，以及不含 `tools` 请求头字段的持久化模型可见 transcript。
 
-现有的 [preset 架构](../architecture/2026-08-03-per-session-agent-presets.zh.md)与已归档的[按 agent 工具呈现](../../archived/feature/2026-08-05-per-agent-tool-presentation.md) Agent Note 描述组装与呈现机制。本决策只增加一项名单成员，不取代任一机制。
+已归档的 [preset 架构](../../archived/architecture/2026-08-03-per-session-agent-presets.md)与[按 agent 工具呈现](../../archived/feature/2026-08-05-per-agent-tool-presentation.md) Agent Note 描述组装与呈现机制。本决策只增加一项名单成员，不取代任一机制。

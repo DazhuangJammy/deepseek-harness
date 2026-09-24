@@ -25,7 +25,7 @@ This package gives the product a configurable brand. Settings → Plugins expose
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this plugin in the browser roster. The assembled Web client reads its durable settings section at runtime.
+Mount this plugin in the browser roster. The node half declares the brand fields as its own entry Config, so the Host settings document persists them and the assembled Web client reads them at runtime through the generic configuration forms.
 
 ### Choosing the profile
 
@@ -43,7 +43,7 @@ A deployment with its own identity can leave this package out and compose anothe
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The two occupants install as one declaration-aware registration set: nested `ctx.slots.inject()` calls wait on the sidebar declaration, so the set works whether this row activates before or after the declarer, withdraws both occupants when the declaration collapses, and leaves no partial brand mix during HMR. The browser half is [`src/client/index.ts`](src/client/index.ts); the node half is an empty Loader seat. The browser title is a build-environment concern (`DSH_CLIENT_TITLE`), outside the slot system.
+The two occupants install as one declaration-aware registration set: nested `ctx.slots.inject()` calls wait on the sidebar declaration, so the set works whether this row activates before or after the declarer, withdraws both occupants when the declaration collapses, and leaves no partial brand mix during HMR. The browser half is [`src/client/index.ts`](src/client/index.ts); the node half declares the volatile brand fields as its own `Config` and claims `{ auto: false }`, because this package ships the Plugins card itself and an auto-generated page would duplicate it. The browser title is a build-environment concern (`DSH_CLIENT_TITLE`), outside the slot system.
 
 </details>
 

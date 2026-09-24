@@ -18,9 +18,15 @@ export interface BrandSettings {
   icon: string
 }
 
-/** Settings schema used by the Host registry and browser decoder. */
-export const BrandSettingsSchema: z<BrandSettings> = z.object({
-  enabled: z.boolean().default(DEFAULT_BRAND_SETTINGS.enabled),
-  name: z.string().default(DEFAULT_BRAND_SETTINGS.name),
-  icon: z.string().default(DEFAULT_BRAND_SETTINGS.icon),
+/**
+ * Live brand fields, declared as this plugin's own Config. `volatile()` is what
+ * makes a field a *preference*: the Host settings document persists it, the
+ * describe mirror projects exactly the volatile subset, and the browser edits
+ * it through `ctx.configForms.get('ui-brand-official')`. Ordinary (non-volatile)
+ * Config stays composition-only and never reaches a form.
+ */
+export const BrandSettingsSchema = z.object({
+  enabled: z.boolean().default(DEFAULT_BRAND_SETTINGS.enabled).volatile(),
+  name: z.string().default(DEFAULT_BRAND_SETTINGS.name).volatile(),
+  icon: z.string().default(DEFAULT_BRAND_SETTINGS.icon).volatile(),
 })

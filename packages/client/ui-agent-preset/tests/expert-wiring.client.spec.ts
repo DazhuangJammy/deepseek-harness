@@ -3,7 +3,7 @@
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {
   ExpertDocument, ExpertOptimizationOutcome, ExpertProposalId,
-} from '@deepseek-ai/dsh-agent-presets/types'
+} from '@deepseek-ai/dsh-agent-preset-registry/types'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { CommandContribution } from '@deepseek-ai/dsh-client-ui-commands/client'
 import { MessageId } from '@deepseek-ai/dsh-llm/brand'

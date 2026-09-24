@@ -5,11 +5,11 @@ import { diffWordsWithSpace, type Change } from 'diff'
 import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
-import type { ExpertIcon, ExpertOptimizationProposal } from '@deepseek-ai/dsh-agent-presets/types'
+import type { ExpertIcon, ExpertOptimizationProposal } from '@deepseek-ai/dsh-agent-preset-registry/types'
 import type { InjectFace, PropsFixedSessionSlots, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import {
-  Button, IconCheckOutline16, IconChevronLeftOutline14, IconEditOutline16,
-  IconLoadingOutline16, IconPlusOutline16, IconRefreshOutline16, IconStopFill16, Tooltip,
+  Button, IconCheckOutlineRegular, IconChevronLeftOutlineRegular, IconEditOutlineRegular,
+  IconLoadingOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, IconStopFillRegular, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { EXPERT_ICONS, expertIcon } from './ExpertIcon.tsx'
 import { expertDraftChanged, type ExpertDraft, type ExpertUiState } from './expert-store.ts'
@@ -81,7 +81,7 @@ function Editor({ state, actions, t }: {
     <div className={css.page}>
       <header className={css.header}>
         <button type="button" className={css.iconButton} aria-label={t('expert.back')} onClick={actions.openList}>
-          <IconChevronLeftOutline14 />
+          <IconChevronLeftOutlineRegular size={14} />
         </button>
         <div>
           <h2>{title}</h2>
@@ -139,7 +139,7 @@ function Editor({ state, actions, t }: {
         <div className={css.formActions}>
           <Button variant="outline" disabled={state.saving} onClick={actions.openList}>{t('cancel')}</Button>
           <Button
-            icon={state.saving ? <IconLoadingOutline16 className={css.spinning} /> : <IconCheckOutline16 />}
+            icon={state.saving ? <IconLoadingOutlineRegular className={css.spinning} /> : <IconCheckOutlineRegular />}
             disabled={state.saving || !changed || draft.name.trim() === '' || draft.prompt.trim() === ''}
             onClick={() => { void actions.save() }}
           >
@@ -187,7 +187,7 @@ function VersionReview({ state, actions, t }: {
     <div className={css.page}>
       <header className={css.header}>
         <button type="button" className={css.iconButton} aria-label={t('expert.backToEditor')} onClick={actions.closeVersion}>
-          <IconChevronLeftOutline14 />
+          <IconChevronLeftOutlineRegular size={14} />
         </button>
         <div>
           <h2>{t('expert.versionReview', { version })}</h2>
@@ -196,7 +196,7 @@ function VersionReview({ state, actions, t }: {
       </header>
       {review.status === 'loading' && (
         <div className={css.center} role="status">
-          <IconLoadingOutline16 className={css.spinning} />
+          <IconLoadingOutlineRegular className={css.spinning} />
           {t('expert.loadingVersion')}
         </div>
       )}
@@ -317,7 +317,7 @@ function Review({ proposal, revisedPrompt, accepting, error, actions, t }: {
         <Button variant="outline" disabled={accepting} onClick={actions.dismissOptimization}>{t('expert.dismiss')}</Button>
         {changed && (
           <Button
-            icon={accepting ? <IconLoadingOutline16 className={css.spinning} /> : <IconCheckOutline16 />}
+            icon={accepting ? <IconLoadingOutlineRegular className={css.spinning} /> : <IconCheckOutlineRegular />}
             disabled={accepting || revisedPrompt.trim() === '' || revisedPrompt === proposal.originalPrompt}
             onClick={() => { void actions.accept() }}
           >
@@ -336,7 +336,7 @@ function OptimizationRunHeader({ stop, t }: {
   return (
     <div className={css.agentRunStatus}>
       <span className={css.agentRunStatusCopy} role="status">
-        <IconLoadingOutline16 className={css.spinning} />
+        <IconLoadingOutlineRegular className={css.spinning} />
         <span>{t('expert.optimizing')}</span>
       </span>
       <Tooltip label={t('expert.stopOptimization')} side="bottom">
@@ -346,7 +346,7 @@ function OptimizationRunHeader({ stop, t }: {
           aria-label={t('expert.stopOptimization')}
           onClick={() => { stop() }}
         >
-          <IconStopFill16 />
+          <IconStopFillRegular />
         </button>
       </Tooltip>
     </div>
@@ -382,7 +382,12 @@ export function ExpertPanel(props: ExpertPanelProps): ReactNode {
           <FixedSessionSlotView
             session={child}
             slot="conversation.view"
-            owner={{ viewRequest: null, openView: () => undefined, completeViewRequest: () => undefined }}
+            owner={{
+              inspectCall: undefined,
+              viewRequest: null,
+              openView: () => undefined,
+              completeViewRequest: () => undefined,
+            }}
             options={{ only: 'chat' }}
           />
         )}
@@ -411,7 +416,7 @@ export function ExpertPanel(props: ExpertPanelProps): ReactNode {
     )
   }
   if (state.editor.kind === 'loading') {
-    return <div className={css.center} role="status"><IconLoadingOutline16 className={css.spinning} />{t('expert.loading')}</div>
+    return <div className={css.center} role="status"><IconLoadingOutlineRegular className={css.spinning} />{t('expert.loading')}</div>
   }
   if (state.editor.kind === 'create' || state.editor.kind === 'edit') {
     if (state.editor.kind === 'edit' && state.editor.versionReview !== null) {
@@ -434,7 +439,7 @@ export function ExpertPanel(props: ExpertPanelProps): ReactNode {
         </div>
         <Tooltip label={t('retry')} side="bottom">
           <button type="button" className={css.iconButton} aria-label={t('retry')} onClick={() => { void load() }}>
-            <IconRefreshOutline16 />
+            <IconRefreshOutlineRegular />
           </button>
         </Tooltip>
       </header>
@@ -459,21 +464,21 @@ export function ExpertPanel(props: ExpertPanelProps): ReactNode {
                   aria-label={t('expert.edit', { name: expert.name })}
                   onClick={() => { void beginEdit(expert.id) }}
                 >
-                  <IconEditOutline16 />
+                  <IconEditOutlineRegular />
                 </button>
               </Tooltip>
             </div>
           )
         })}
         {state.status === 'loading' && state.experts.length === 0 && (
-          <div className={css.center} role="status"><IconLoadingOutline16 className={css.spinning} />{t('expert.loading')}</div>
+          <div className={css.center} role="status"><IconLoadingOutlineRegular className={css.spinning} />{t('expert.loading')}</div>
         )}
         {state.status === 'ready' && state.experts.length === 0 && (
           <div className={css.empty}><strong>{t('expert.empty')}</strong><span>{t('expert.emptyHint')}</span></div>
         )}
       </div>
       <Button
-        icon={<IconPlusOutline16 />}
+        icon={<IconPlusOutlineRegular />}
         disabled={!state.authorable}
         title={state.authorable ? undefined : t('duplicateUnavailable')}
         onClick={beginCreate}

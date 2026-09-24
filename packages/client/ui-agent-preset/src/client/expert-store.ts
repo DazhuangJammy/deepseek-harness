@@ -6,7 +6,7 @@ import type {} from '@deepseek-ai/dsh-api-session-controller/client'
 import type {
   ExpertDocument, ExpertIcon, ExpertOptimizationOutcome, ExpertOptimizationProposal,
   ExpertProposalId, ExpertSummary, ExpertVersionComparison,
-} from '@deepseek-ai/dsh-agent-presets/types'
+} from '@deepseek-ai/dsh-agent-preset-registry/types'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'

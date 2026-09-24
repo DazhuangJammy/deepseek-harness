@@ -13,7 +13,8 @@ describe('preset display copy', () => {
     ['cordis', 'presetCordisName', 'presetCordisDescription'],
     ['chat', 'presetChatName', 'presetChatDescription'],
   ] as const)('localizes the shipped %s preset in English and Chinese', (id, nameKey, descriptionKey) => {
-    const preset = { id, trust: 'system' as const, name: 'file name', description: 'file description' }
+    // A shipped preset publishes no name of its own; the dictionaries own its copy.
+    const preset = { id }
 
     expect(presetDisplayText(preset, translate(en)))
       .toEqual({ name: en[nameKey], description: en[descriptionKey] })
@@ -21,14 +22,15 @@ describe('preset display copy', () => {
       .toEqual({ name: zh[nameKey], description: zh[descriptionKey] })
   })
 
-  it('keeps file metadata for user and unknown system presets', () => {
+  it('keeps file metadata for self-named and unknown presets', () => {
     const fileCopy = { name: '我的标准', description: '团队自己的 preset。' }
 
-    expect(presetDisplayText({ id: 'standard', trust: 'user', ...fileCopy }, translate(en)))
+    // A declaration that names itself owns its copy, even under a shipped id.
+    expect(presetDisplayText({ id: 'standard', ...fileCopy }, translate(en)))
       .toEqual(fileCopy)
-    expect(presetDisplayText({ id: 'deployment-extra', trust: 'system', ...fileCopy }, translate(en)))
+    expect(presetDisplayText({ id: 'deployment-extra', ...fileCopy }, translate(en)))
       .toEqual(fileCopy)
-    expect(presetDisplayText({ id: 'bare', trust: 'user' }, translate(en)))
+    expect(presetDisplayText({ id: 'bare' }, translate(en)))
       .toEqual({ name: 'bare' })
   })
 })

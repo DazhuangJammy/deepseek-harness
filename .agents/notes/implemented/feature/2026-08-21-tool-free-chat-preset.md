@@ -36,4 +36,4 @@ The preset removes tool schemas and runtime material from each model request but
 
 The shipped Web composition test pins the exact persona, empty tool assembly, absent compaction service, and a two-turn request containing the first question and answer. The keyless Web snapshot pins the assembled chat composition and persisted model-visible transcript without a `tools` header field.
 
-The active [preset architecture](../architecture/2026-08-03-per-session-agent-presets.md) and archived [per-agent tool-presentation](../../archived/feature/2026-08-05-per-agent-tool-presentation.md) note describe composition and presentation. This decision adds one roster member and does not supersede either mechanism.
+The archived [preset architecture](../../archived/architecture/2026-08-03-per-session-agent-presets.md) and [per-agent tool-presentation](../../archived/feature/2026-08-05-per-agent-tool-presentation.md) notes describe composition and presentation. This decision adds one roster member and does not supersede either mechanism.

@@ -1,0 +1,33 @@
+# Agent preset chat: one `@deepseek-ai/dsh-agent-preset` declaration inserted
+# after the web patch. Edits saved from the Web editor override this row's
+# `config.plugins` by id from the profile patch.
+#
+# A conversation-first preset: one complete conversational persona plus the
+# shell and filesystem tools uploaded files need. It deliberately omits skills,
+# project instructions, runtime context, and compaction. Conversation history
+# remains Session-owned and reaches every model request.
+- insert:
+    - id: preset-chat
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: chat
+        order: 5
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: You are a helpful conversational assistant.
+              complete: true
+              includeRuntimeContext: false
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false

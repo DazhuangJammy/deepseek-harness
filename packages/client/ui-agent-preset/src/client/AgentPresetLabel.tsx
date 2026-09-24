@@ -11,10 +11,10 @@
 import { useEffect } from 'react'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { IconAgentPresetOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconAgentPresetOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 // Type-only: pulls the ui-conversation SlotMap merge (the header actions).
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type {} from '@deepseek-ai/dsh-agent-presets/types'
+import type {} from '@deepseek-ai/dsh-agent-preset-registry/types'
 import { expertIcon } from './ExpertIcon.tsx'
 import type { ExpertUiState } from './expert-store.ts'
 import type { AgentPresetSettingsState } from './settings-store.ts'
@@ -71,7 +71,7 @@ export function AgentPresetLabel({
 
   const text = option === undefined ? undefined : presetDisplayText(option, t)
   const expertHint = expert?.welcome.trim() === '' ? undefined : expert?.welcome
-  const Icon = expert === undefined ? IconAgentPresetOutline16 : expertIcon(expert.icon)
+  const Icon = expert === undefined ? IconAgentPresetOutlineRegular : expertIcon(expert.icon)
   return (
     <span className={css.label} title={text?.description ?? expertHint ?? t('headerHint')}>
       <Icon size={14} className={css.icon} />

@@ -1,6 +1,40 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/experimental/desktop-packager/README.md
-README.md: d215123030bd040cb8e32c676b4ddf07c6969470
-README.zh.md: 8748aef06be5135022d2e363caea1969b7ac1d79
+/:
+  en: 2a9eb51860f5af9b
+  zh: 8284095c04e760db
+/deepseek-ai-dsh-experimental-desktop-packager:
+  en: 1612b989efc68630
+  zh: df993ba8e42c8111
+/deepseek-ai-dsh-experimental-desktop-packager/summary:
+  en: 384d599bfe0b2b4a
+  zh: cce690d2a2bafbe8
+/deepseek-ai-dsh-experimental-desktop-packager/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: b1aa81f8c2c39bee
+/deepseek-ai-dsh-experimental-desktop-packager/use-this-package:
+  en: 09eb55b36ea533dc
+  zh: 1938a7cf9a987af0
+/deepseek-ai-dsh-experimental-desktop-packager/use-this-package/the-generated-remote-surface:
+  en: e77303ea2a42b8e8
+  zh: a2c50e02ac923e3f
+/deepseek-ai-dsh-experimental-desktop-packager/understand-the-implementation:
+  en: 631d0d8ef59255db
+  zh: 42a8e6e37841048f
+/deepseek-ai-dsh-experimental-desktop-packager/further-exploration:
+  en: 06b73c35affb7e5b
+  zh: 103c39eaf49c7b07
+/deepseek-ai-dsh-experimental-desktop-packager/model-experience:
+  en: 73c2642d1bfdd126
+  zh: b5b3f461474bcaf7
+/deepseek-ai-dsh-experimental-desktop-packager/model-experience/kv-cache-effect:
+  en: b1eed833b1756f0b
+  zh: f71c64e23548a428
+/deepseek-ai-dsh-experimental-desktop-packager/known-limitations-and-deferred-work:
+  en: 6b45df7592977990
+  zh: daf1f2e36c52ea80
+/deepseek-ai-dsh-experimental-desktop-packager/known-limitations-and-deferred-work/dev-note:
+  en: 6a26ab127e40f2a3
+  zh: 28d1f63541e97ae2

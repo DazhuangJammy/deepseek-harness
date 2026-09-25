@@ -1,6 +1,43 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/experimental/desktop-packager-web-profile/README.md
-README.md: e39d4971550a96a5839d58543cab7316dc9d6265
-README.zh.md: 267fbd969c45d423054992840c0605f7fc6ba53e
+/:
+  en: 4ec20c33fa0f2ed9
+  zh: 9d473f6a148f0190
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile:
+  en: 49052da5ef522b20
+  zh: a039d8a065f4a834
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/summary:
+  en: 0d519b984c0640a8
+  zh: aa2da9fdec6b8a7f
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: b1aa81f8c2c39bee
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/use-this-package:
+  en: bbff250eba0f1b89
+  zh: 0a618f05cc88ee2b
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/use-this-package/install-into-a-profile:
+  en: 3fc7a627cbfbb51b
+  zh: 4c196607e40f7d2c
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/use-this-package/what-you-get:
+  en: 92cce077640469e4
+  zh: c6ad5fc24d564fc2
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/understand-the-implementation:
+  en: 13215c74ea2b606f
+  zh: 150edef9fbe8a481
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/further-exploration:
+  en: 189ecfcdffcaf6f3
+  zh: 36e03ad8c237bdbc
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/model-experience:
+  en: 02021d7e57bd2bd9
+  zh: a92831290d0b6b67
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/model-experience/kv-cache-effect:
+  en: 214770152dde2ec3
+  zh: 86b2783a67b36cea
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/known-limitations-and-deferred-work:
+  en: 52f9ed5613d52cc5
+  zh: a7a1a97f44e3e10d
+/deepseek-ai-dsh-experimental-desktop-packager-web-profile/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: b0583cf7b00cbb13

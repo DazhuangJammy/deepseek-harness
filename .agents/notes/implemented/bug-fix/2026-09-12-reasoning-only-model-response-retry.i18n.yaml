@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-reasoning-only-model-response-retry.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-12-reasoning-only-model-response-retry.md
-2026-09-12-reasoning-only-model-response-retry.md: 8c0728b8790b8738989d0d9ce5aa66bf6d2e7b68
-2026-09-12-reasoning-only-model-response-retry.zh.md: e6609997e2b65b210a2f1a914aaa2c229b9d5ec8
+/agent-note-reasoning-only-model-responses-are-retryable-failures:
+  en: 8dfab9e5c3258cec
+  zh: f7711ef6480e50c8
+/agent-note-reasoning-only-model-responses-are-retryable-failures/problem:
+  en: 6573a5aa003d486e
+  zh: 5766b2a629f39534
+/agent-note-reasoning-only-model-responses-are-retryable-failures/decision:
+  en: 2533c205f6681e70
+  zh: 4da0b54c0b7fe143
+/agent-note-reasoning-only-model-responses-are-retryable-failures/verification:
+  en: 65396213a8e8ecfd
+  zh: c4aa290756fef2f7
+/agent-note-reasoning-only-model-responses-are-retryable-failures/alternatives-considered:
+  en: 769cb33d804dfca4
+  zh: 3e51f54757821716
+/agent-note-reasoning-only-model-responses-are-retryable-failures/consequences:
+  en: b8ced6589d81ab72
+  zh: 23dd5456cfdad702

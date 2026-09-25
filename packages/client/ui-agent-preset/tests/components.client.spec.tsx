@@ -35,7 +35,6 @@ const EXPERTS_EMPTY: ExpertUiState = {
 }
 
 const SEAT_READY: AgentPresetSeatState = {
-  showPicker: true,
   current: 'standard',
   options: [
     { id: 'standard' },
@@ -60,20 +59,22 @@ function renderSeat(
   state: Partial<AgentPresetSeatState> = {},
   select: () => Promise<string | undefined> = () => Promise.resolve(undefined),
   session?: { id: string; retainInfo: SessionRetainInfo | undefined },
+  enabled = true,
 ) {
   const store = createSnapshotStore<AgentPresetSeatState>({ ...SEAT_READY, ...state })
-  const developerTools = createSnapshotStore(true)
+  const developerTools = createSnapshotStore(enabled)
   const actions = { load: vi.fn(() => Promise.resolve()), select: vi.fn(select), introduced: vi.fn() }
-  render(<AgentPresetSeat {...({
+  const props = {
     ...actions,
     sessionId: session === undefined ? undefined : SessionId(session.id),
-    useShowPresetPicker: bindSnapshotSelector(developerTools),
+    useDeveloperTools: bindSnapshotSelector(developerTools),
     useAgentPresetSeat: bindSnapshotSelector(store),
     useSessionRetainInfo: session === undefined
       ? useSessionRetainInfo
       : <Selected,>(selector: (value: SessionRetainInfo | undefined) => Selected) => selector(session.retainInfo),
     t: translate,
-  } as unknown as AgentPresetSeatProps)} />)
+  } as AgentPresetSeatProps
+  render(<AgentPresetSeat {...props} />)
   return { ...actions, developerTools }
 }
 
@@ -101,8 +102,8 @@ function renderLabel(
 }
 
 describe('the new-session chip', () => {
-  it('renders nothing while the picker is disabled', () => {
-    renderSeat({ showPicker: false })
+  it('renders nothing while Developer tools are off', () => {
+    renderSeat({}, undefined, undefined, false)
 
     expect(screen.queryByRole('button')).toBeNull()
   })

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-unsigned-macos-desktop-packaging.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-12-unsigned-macos-desktop-packaging.md
-2026-09-12-unsigned-macos-desktop-packaging.md: 43ea2b03a69f8cf162d7b6553cabee3e39c37886
-2026-09-12-unsigned-macos-desktop-packaging.zh.md: 3303bf9dd9d8b3aef4b3c7e47c2414488d172d71
+/agent-note-unsigned-macos-desktop-packaging:
+  en: 5758d34ea3b4399b
+  zh: b94e0a927e73e678
+/agent-note-unsigned-macos-desktop-packaging/problem:
+  en: d9af7e4bb06f38df
+  zh: 9bbe6373ab965102
+/agent-note-unsigned-macos-desktop-packaging/decision:
+  en: d1611aaf32af42c1
+  zh: 9abf22371822227e
+/agent-note-unsigned-macos-desktop-packaging/consequences:
+  en: 93830a02c1b887c1
+  zh: 37955893f8998f1d
+/agent-note-unsigned-macos-desktop-packaging/alternatives-considered:
+  en: b5a0789c9bba8c4a
+  zh: bc6f8ba0d7c14625

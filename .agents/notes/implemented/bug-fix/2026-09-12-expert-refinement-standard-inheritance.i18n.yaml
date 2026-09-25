@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-expert-refinement-standard-inheritance.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-12-expert-refinement-standard-inheritance.md
-2026-09-12-expert-refinement-standard-inheritance.md: 4ee06b1fcd7982388c85ea6e8362bde00aa21ddc
-2026-09-12-expert-refinement-standard-inheritance.zh.md: c8cc366c365e8422ae197351c068ca547689ee9a
+/agent-note-expert-refinement-standard-inheritance:
+  en: 2a9ddf373e7ce319
+  zh: ed10e57cc924c56c
+/agent-note-expert-refinement-standard-inheritance/problem:
+  en: 1939c91d38397650
+  zh: fa333d55d758f0a4
+/agent-note-expert-refinement-standard-inheritance/decision:
+  en: 9bcf2f0974158308
+  zh: a3f6f6a43f8de82c
+/agent-note-expert-refinement-standard-inheritance/alternatives-considered:
+  en: 01961735bb45790c
+  zh: d6150952de4335d2
+/agent-note-expert-refinement-standard-inheritance/consequences:
+  en: c44d1e25213a2757
+  zh: 94c681043ddced82

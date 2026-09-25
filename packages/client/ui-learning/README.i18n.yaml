@@ -1,6 +1,43 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-learning/README.md
-README.md: 59d35f6d9f8e914bb2b19b692be5cd371317a762
-README.zh.md: 9371afed9e95fd1871614e592b71b8f9789fb7cc
+/:
+  en: 7bb9b3213c3ee307
+  zh: 87d51a5b4361bd92
+/deepseek-ai-dsh-client-ui-learning:
+  en: 88badcbbf0390f62
+  zh: 5ef105f1667fd588
+/deepseek-ai-dsh-client-ui-learning/summary:
+  en: 87bb83f075e2af06
+  zh: 04b2909282c29037
+/deepseek-ai-dsh-client-ui-learning/table-of-contents:
+  en: 257701b6850ffbfd
+  zh: bed3f71b4c390185
+/deepseek-ai-dsh-client-ui-learning/use-this-package:
+  en: 265ea9a2b4a967ad
+  zh: d1adccd18a271eb6
+/deepseek-ai-dsh-client-ui-learning/understand-the-implementation:
+  en: da3522cdadc5d293
+  zh: 920d1ef4cf3f00a5
+/deepseek-ai-dsh-client-ui-learning/dev-note:
+  en: 1405c48ebb59256e
+  zh: 647a8c4b75d5fff0
+/deepseek-ai-dsh-client-ui-learning/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-client-ui-learning/model-experience/browser-projection:
+  en: 5ac0bb9c76d94abf
+  zh: 7f0f5432b1369a7b
+/deepseek-ai-dsh-client-ui-learning/model-experience/browser-projection/what-the-model-sees:
+  en: 58d0fc995bd5d27a
+  zh: 5a4211a3ff954e06
+/deepseek-ai-dsh-client-ui-learning/model-experience/browser-projection/token-effect:
+  en: f79284c78d3b1941
+  zh: 7c72683935f1e82b
+/deepseek-ai-dsh-client-ui-learning/model-experience/browser-projection/kv-cache-effect:
+  en: 90c81af1376f42e3
+  zh: bcdffceeab970476
+/deepseek-ai-dsh-client-ui-learning/known-limitations-and-deferred-work:
+  en: 2fe5f2178ad5838e
+  zh: 09fd449b9d668794

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-agent-scaled-design-and-owner-operated-delivery.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-08-21-agent-scaled-design-and-owner-operated-delivery.md
-2026-08-21-agent-scaled-design-and-owner-operated-delivery.md: fd1970927cb2b82421ce7e61553dfaf86fdf5d05
-2026-08-21-agent-scaled-design-and-owner-operated-delivery.zh.md: 966492a21a34b73ed5ee9907ebbc8b09e69c0155
+/agent-note-agent-scaled-design-and-owner-operated-delivery:
+  en: 622b6b76314b0fa2
+  zh: 8c8d010a77328b9c
+/agent-note-agent-scaled-design-and-owner-operated-delivery/problem:
+  en: 3892c0526f9e0ec3
+  zh: 35f30c71153f33f6
+/agent-note-agent-scaled-design-and-owner-operated-delivery/decision:
+  en: 4507f0ea6f610c1e
+  zh: c404e8f0a9e76550
+/agent-note-agent-scaled-design-and-owner-operated-delivery/alternatives-considered:
+  en: 5c8e9f83e11c4727
+  zh: baeebefb8033ed13
+/agent-note-agent-scaled-design-and-owner-operated-delivery/consequences:
+  en: 97312ed53c810c6e
+  zh: 03478db506c38fcb

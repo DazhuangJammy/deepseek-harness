@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-configurable-brand-and-fork-cut.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-12-configurable-brand-and-fork-cut.md
-2026-09-12-configurable-brand-and-fork-cut.md: 1fa4f687496cf7f0930b662957e2761210d6402c
-2026-09-12-configurable-brand-and-fork-cut.zh.md: 78ce70e0201c3b0629e3c45d12a584004ce39e7d
+/agent-note-configurable-desktop-brand-and-fork-cut:
+  en: b12782b73f79fc1c
+  zh: 6123906f520f2a99
+/agent-note-configurable-desktop-brand-and-fork-cut/problem:
+  en: 7321f8f61ea32d6b
+  zh: 67b17ce7002ef9fb
+/agent-note-configurable-desktop-brand-and-fork-cut/decision:
+  en: a6065a93c242be55
+  zh: 5c6f36ab82ee83b8
+/agent-note-configurable-desktop-brand-and-fork-cut/consequences:
+  en: 623c67aea030c42b
+  zh: de57b2ab8ec9ad1e
+/agent-note-configurable-desktop-brand-and-fork-cut/alternatives-considered:
+  en: 0727c3dd9e3cda10
+  zh: 829640667c7ba8a9

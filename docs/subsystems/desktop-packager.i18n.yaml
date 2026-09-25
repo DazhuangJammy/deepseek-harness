@@ -1,6 +1,10 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for desktop-packager.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/subsystems/desktop-packager.md
-desktop-packager.md: e5be43e3c36f8e2dd272a0ff44ec4797f2a96fdc
-desktop-packager.zh.md: 521c603a62f784ef64f4018c9c2785a168c91c96
+/desktop-packager:
+  en: bd643d06c4416fa3
+  zh: 3161b88d6f5ab9e1
+/desktop-packager/one-build-at-a-time:
+  en: 918307878e3a2e18
+  zh: 368b7c13b4942a85

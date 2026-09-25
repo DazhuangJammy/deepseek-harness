@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-11-chat-file-capabilities.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-11-chat-file-capabilities.md
-2026-09-11-chat-file-capabilities.md: 4f39fb6c4c452c8c8546bead504fd81a5bc1781e
-2026-09-11-chat-file-capabilities.zh.md: 8eee1e422486130f1c3672ae48694dbe71783438
+/agent-note-chat-file-capabilities:
+  en: 52eb1377e64a4da4
+  zh: 9fb3e029684046b0
+/agent-note-chat-file-capabilities/problem:
+  en: 6b992e1dc9d755ee
+  zh: c718f15c23dd796c
+/agent-note-chat-file-capabilities/decision:
+  en: 76da4778dd1ea3a4
+  zh: ca2a1e3bcd6b921d
+/agent-note-chat-file-capabilities/alternatives-considered:
+  en: 98f0ea8045a2c8d3
+  zh: 0efa94842dc4119e
+/agent-note-chat-file-capabilities/consequences:
+  en: 1e9d629179b9e1ee
+  zh: dcd3bab742381870

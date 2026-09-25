@@ -146,7 +146,9 @@ export async function* translate(events: AsyncIterable<Record<string, unknown>>,
       if (event.usage !== undefined) updateUsage(usage, event.usage)
     } else {
       if (reason === undefined || [...blocks.values()].some(block => !block.closed)) return malformed('message_stop without settled blocks and stop reason')
-      if (blocks.size === 0 && reason.kind === 'stop') throw new LlmError('DeepSeek Messages returned no content', 'EMPTY_RESPONSE')
+      const hasReply = [...blocks.values()].some(({ content }) => content.type === 'tool-call'
+        || (content.type === 'text' && /\S/.test(content.text)))
+      if (!hasReply && reason.kind === 'stop') throw new LlmError('DeepSeek Messages returned no content', 'EMPTY_RESPONSE')
       // Truncated tool JSON is retained in the stream, then pruned by the shared assembler.
       if (reason.kind !== 'max-tokens') {
         for (const { content } of blocks.values()) {

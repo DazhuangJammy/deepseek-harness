@@ -1,6 +1,46 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/ui-agent-preset/README.md
-README.md: 14bf718ecea80e35f9cebf29ee3314c51985fadc
-README.zh.md: 6b3eec0293cb8bc2a3fb6fd1824611793fd7d302
+/:
+  en: 3278de201ad33089
+  zh: 51e7069b3ee387da
+/deepseek-ai-dsh-client-ui-agent-preset:
+  en: e1743eaa8f8847d0
+  zh: 8cf1ba5beb7ad8ed
+/deepseek-ai-dsh-client-ui-agent-preset/summary:
+  en: eeda91ab468e3bde
+  zh: 982934226fa2f77f
+/deepseek-ai-dsh-client-ui-agent-preset/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-client-ui-agent-preset/use-this-package:
+  en: a9bfbb6ee4eb2ef9
+  zh: 86828f60d16511ff
+/deepseek-ai-dsh-client-ui-agent-preset/use-this-package/managing-the-roster:
+  en: 58b751ad22e527a0
+  zh: 61918871e1c9182b
+/deepseek-ai-dsh-client-ui-agent-preset/use-this-package/the-conversational-entry:
+  en: 9030a1f0ec5b088b
+  zh: dd1990a9375081a0
+/deepseek-ai-dsh-client-ui-agent-preset/use-this-package/experts:
+  en: c3b7af746ccda398
+  zh: 1a27a66c8d957be9
+/deepseek-ai-dsh-client-ui-agent-preset/understand-the-implementation:
+  en: d82a991637c5059f
+  zh: 0c5b77366680a061
+/deepseek-ai-dsh-client-ui-agent-preset/further-exploration:
+  en: bd441d3d0cb668fe
+  zh: 8d9b0f12d406c121
+/deepseek-ai-dsh-client-ui-agent-preset/model-experience:
+  en: 1b9a12596cba89b2
+  zh: 5d564781f666d2f1
+/deepseek-ai-dsh-client-ui-agent-preset/model-experience/kv-cache-effect:
+  en: c2b779cacd88e9bd
+  zh: 2c301970034741b8
+/deepseek-ai-dsh-client-ui-agent-preset/known-limitations-and-deferred-work:
+  en: 908a2f01a14ad1c5
+  zh: b08df7c2ff2a00e5
+/deepseek-ai-dsh-client-ui-agent-preset/known-limitations-and-deferred-work/dev-note:
+  en: 9a841d8f018f77d1
+  zh: fb8b7bb71375e76e

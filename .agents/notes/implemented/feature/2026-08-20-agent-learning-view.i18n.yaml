@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-20-agent-learning-view.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-20-agent-learning-view.md
-2026-08-20-agent-learning-view.md: 12e037f99ba22d43720bb8e81e382e32cb809d22
-2026-08-20-agent-learning-view.zh.md: 0eb21d17cebec71b79da027d5f9e206d0fd08dff
+/agent-note-read-only-agent-architecture-learning-view:
+  en: 3baf5b02b3897c1d
+  zh: e1e6990d9c3fdcc4
+/agent-note-read-only-agent-architecture-learning-view/problem:
+  en: fe3490f7e8a24686
+  zh: 2b2e36be45672365
+/agent-note-read-only-agent-architecture-learning-view/decision:
+  en: 54522a71741f28e1
+  zh: 1e6009374d24d029
+/agent-note-read-only-agent-architecture-learning-view/alternatives-considered:
+  en: 538e0ae2229d9a3a
+  zh: 84cbed841bff5e34
+/agent-note-read-only-agent-architecture-learning-view/consequences:
+  en: be0bfbb44d43fd05
+  zh: 8caa673ee035b260

@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-desktop-packager-plugin.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-12-desktop-packager-plugin.md
-2026-09-12-desktop-packager-plugin.md: 08e6fd47747afe387a091479277d3554942c4c92
-2026-09-12-desktop-packager-plugin.zh.md: 8f5ff7daf3de239cdca3eb45cb24e27c46995cc4
+/agent-note-opt-in-desktop-packager-plugin:
+  en: 30d8b211da6116d8
+  zh: 5acb5bffb8a70bcd
+/agent-note-opt-in-desktop-packager-plugin/problem:
+  en: 0abec1db8069e349
+  zh: 7664d7b5a605d9cc
+/agent-note-opt-in-desktop-packager-plugin/decision:
+  en: a5fd6b2d281656ed
+  zh: 9ca6cc0230fdc193
+/agent-note-opt-in-desktop-packager-plugin/consequences:
+  en: 1458cc53f6b36d28
+  zh: 94dc5ef38df1bcfc
+/agent-note-opt-in-desktop-packager-plugin/alternatives-considered:
+  en: 3fec79d17133793c
+  zh: e71d882fffcd0aa3

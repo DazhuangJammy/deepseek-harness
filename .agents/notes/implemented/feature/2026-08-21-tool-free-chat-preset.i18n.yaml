@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-08-21-tool-free-chat-preset.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-21-tool-free-chat-preset.md
-2026-08-21-tool-free-chat-preset.md: e114a2d7da6d6dc2695fd5b4c037ed0cd67f2911
-2026-08-21-tool-free-chat-preset.zh.md: 5a815a91255e3bd8e2d1bf661fd0aa8a018d7d6c
+/agent-note-tool-free-chat-preset:
+  en: eb470e8f87aff1c2
+  zh: f2efe6133d794e7a
+/agent-note-tool-free-chat-preset/problem:
+  en: 850df3d8788641b0
+  zh: 231f40cd78c4f13a
+/agent-note-tool-free-chat-preset/decision:
+  en: 77e443ee92dfaf21
+  zh: 9719e0dfbcd7caa7
+/agent-note-tool-free-chat-preset/alternatives-considered:
+  en: 21af1d6867fc96df
+  zh: b191ae282818a9f7
+/agent-note-tool-free-chat-preset/consequences:
+  en: 849529bd2eef277b
+  zh: 686dd1f7980dd89e

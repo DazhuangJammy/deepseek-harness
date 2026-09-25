@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-desktop-edit-menu-roles.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-12-desktop-edit-menu-roles.md
-2026-09-12-desktop-edit-menu-roles.md: d051aa3f6f21ddb5b664957e8c0b364a20de03c3
-2026-09-12-desktop-edit-menu-roles.zh.md: 0a1e92a6fb3658e4a8eab24f98dc40e7603219fc
+/agent-note-desktop-standard-editing-roles-in-the-application-menu:
+  en: ef85e0ddae9ade87
+  zh: 7124424ef9a565b1
+/agent-note-desktop-standard-editing-roles-in-the-application-menu/problem:
+  en: 7e3652bee2645d4d
+  zh: 28e0c098181335bc
+/agent-note-desktop-standard-editing-roles-in-the-application-menu/decision:
+  en: 1c8335495b8074d8
+  zh: fd532353b46fb61a
+/agent-note-desktop-standard-editing-roles-in-the-application-menu/consequences:
+  en: 9b7f8edcc4af1f94
+  zh: dc766387294d0caa
+/agent-note-desktop-standard-editing-roles-in-the-application-menu/alternatives-considered:
+  en: db0985330cf2c598
+  zh: fd1e9ee102ebc20e

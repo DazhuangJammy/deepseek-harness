@@ -6,6 +6,7 @@ import type {
 } from '@deepseek-ai/dsh-agent-preset-registry/types'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { CommandContribution } from '@deepseek-ai/dsh-client-ui-commands/client'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { describe, expect, it, vi } from 'vitest'
@@ -45,8 +46,7 @@ function harness() {
   const failed = (message: string) => Promise.resolve({ ok: false as const, error: { message } })
   const agentPresets = {
     list: () => ok({
-      presets: [{ id: 'standard', trust: 'system' as const, isDefault: true }],
-      authorable: true, modeSelectionEnabled: true,
+      presets: [{ id: 'standard', isDefault: true }],
     }),
     listExperts: () => { calls.push('listExperts'); return ok({ experts: [expert], authorable: true }) },
     readExpert: (id: string) => { calls.push(`read:${id}`); return ok(expert) },
@@ -68,7 +68,7 @@ function harness() {
     },
     acceptExpertOptimization: () => { calls.push('accept'); return ok(expert) },
     dismissExpertOptimization: () => { calls.push('dismiss'); return ok(undefined) },
-    read: () => ok({ agentPreset: 'standard', trust: 'system' as const, content: '' }),
+    read: () => ok({ agentPreset: 'standard', content: '' }),
     copy: () => ok(undefined),
     deletePreset: () => ok(undefined),
   }
@@ -79,6 +79,8 @@ function harness() {
     openAgentPresetDirectory: () => ok({ opened: true as const }),
   }
   const context = {
+    // Developer tools gate every selection surface this plugin registers.
+    configForms: { developerTools: { enabled: createSnapshotStore(true) } },
     effect: (factory: () => unknown) => {
       const disposer = factory()
       if (typeof disposer === 'function') disposers.push(disposer as () => void)

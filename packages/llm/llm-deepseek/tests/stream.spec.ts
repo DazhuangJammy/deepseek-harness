@@ -90,6 +90,15 @@ describe('Messages stream', () => {
     await expect(chunks(translate(events([start, ...end()]), MODEL))).rejects.toMatchObject({ code: 'EMPTY_RESPONSE' })
     await expect(chunks(translate(events(textEvents.slice(0, -1)), MODEL))).rejects.toMatchObject({ code: 'STREAM_CLOSED' })
   })
+
+  it.each([
+    ['reasoning only', { type: 'thinking', thinking: 'mull' }],
+    ['whitespace-only text', { type: 'text', text: ' \n\t' }],
+  ])('classifies a stop that carries %s as EMPTY_RESPONSE', async (_case, content_block) => {
+    await expect(chunks(translate(events([start,
+      { type: 'content_block_start', index: 0, content_block },
+      { type: 'content_block_stop', index: 0 }, ...end()]), MODEL))).rejects.toMatchObject({ code: 'EMPTY_RESPONSE' })
+  })
 })
 
 describe('SSE framing and provider failures', () => {

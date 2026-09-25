@@ -171,6 +171,9 @@ export class AgentPresetRegistry extends TypertRemoteService {
   /** Reverse index used to retire one Session's previous candidate in constant time. */
   private readonly expertProposalBySession = new Map<SessionId, ExpertProposalId>()
 
+  /** Expert Sessions whose refinement child is being published inside the current start. */
+  private readonly startingRefinements = new Set<SessionId>()
+
   /** Live agent-local prompt override installed after a version is applied. */
   private readonly expertPromptOverrides = new WeakMap<Agent, () => void | Promise<void>>()
 
@@ -192,14 +195,16 @@ export class AgentPresetRegistry extends TypertRemoteService {
     this.expertRoots = config.roots ?? [{ path: dshHomePath(USER_PRESET_DIR), trust: 'user' }]
     ctx.sessionProjections.register(agentPresetProjectionDefinition)
     ctx.sessionProjections.register(expertRefinementProjectionDefinition(this.expertConfig.maxEvidenceMessages))
-    ctx.inject(['skills'], (skillCtx) => { skillCtx.skills.register(expertPromptRefinerRegistration()) })
     ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
     ctx.on('session/event', (session, event) => {
       if (event.type === 'agent-preset/selected') ctx.emit('agent-preset/selected', session.id, event.data.agentPreset)
     })
     // Advisory, not fatal: a synchronous `agent/created` listener that throws
     // VETOES publication, and composing an agent outside the roster is legal.
-    ctx.on('agent/created', ({ agent }) => { this.restoreExpertPromptOverride(agent) })
+    ctx.on('agent/created', ({ agent }) => {
+      this.restoreExpertPromptOverride(agent)
+      this.admitRefinementChild(agent)
+    })
     ctx.on('agent/disposed', ({ agent }) => {
       const proposalId = this.expertProposalBySession.get(agent.id)
       if (proposalId !== undefined) void this.retireExpertOptimization(proposalId)
@@ -208,6 +213,23 @@ export class AgentPresetRegistry extends TypertRemoteService {
       await Promise.allSettled([...this.expertProposals.keys()].map(id => this.retireExpertOptimization(id)))
     }, 'agent-presets: expert optimization runs')
     this.expertsReady = this.installExperts()
+  }
+
+  /**
+   * Give a refinement child the internal skill its opening request invokes.
+   *
+   * The skill registers on the child's own scope rather than the deployment
+   * layer: it drives one optimization run, and the catalog every other agent
+   * reads must not advertise a workflow no user starts by hand. Publication is
+   * the last moment before the child's opening request, so the registration
+   * lands before the invocation is resolved.
+   * @param agent - the Agent being published.
+   */
+  private admitRefinementChild(agent: Agent): void {
+    const { origin, parentSession } = agent.session.header
+    if (origin !== 'subagent' || parentSession === undefined) return
+    if (!this.startingRefinements.has(parentSession)) return
+    agent.ctx.get('skills')?.register(expertPromptRefinerRegistration())
   }
 
   /** Default preset for a subsequently created session. */
@@ -771,6 +793,7 @@ export class AgentPresetRegistry extends TypertRemoteService {
     if (previous !== undefined) await this.retireExpertOptimization(previous)
     const proposalId = brandString<ExpertProposalId>(randomUUID())
     let run: ExpertSubagentRun
+    this.startingRefinements.add(sessionId)
     try {
       run = await agent.runMaintenance(maintenanceSignal => subagents.start('spawn', {
         parent: agent,
@@ -787,6 +810,8 @@ export class AgentPresetRegistry extends TypertRemoteService {
         sessionId,
         reason: String(error),
       })
+    } finally {
+      this.startingRefinements.delete(sessionId)
     }
     const held = { sessionId, run }
     this.expertProposalBySession.set(sessionId, proposalId)

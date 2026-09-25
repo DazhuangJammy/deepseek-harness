@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
-import AgentRegistry, { assembleContextFor, type AgentHandle } from '@deepseek-ai/dsh-agent'
+import AgentRegistry, { assembleContextFor, type Agent, type AgentHandle } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import {
   createAssistantMessage, createSystemMessage, createUserMessage, LlmRuntime,
@@ -568,5 +568,48 @@ describe('expert optimization workflow', () => {
 
     expect(internals.expertProposalBySession.get(parentId)).toBe(currentId)
     expect(dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('scopes the refinement skill to its child instead of the deployment catalog', async () => {
+    const started: { registry?: Context } = {}
+    const children: Agent[] = []
+    const ctx = await workflowHarness(async (request) => {
+      const parent = request['parent'] as Agent
+      const handle = await started.registry!.agents.create({
+        sessionId: SessionId(`refinement-child-${children.length}`),
+        parentAgent: parent,
+        meta: { parentSession: parent.session.header.id, origin: 'subagent' },
+        setup: async agentCtx => void await started.registry!.agentPresets.mount(agentCtx, 'interview'),
+      })
+      children.push(handle.agent)
+      return { id: handle.agent.id, result: Promise.resolve(output({})), dispose: () => Promise.resolve() }
+    })
+    started.registry = ctx
+    const parent = await createAgent(ctx, 'expert-parent', 'interview')
+    const answerId = appendAnswer(parent.agent)
+
+    await ctx.agentPresets.remoteExportOptimizeExpert(
+      SessionId('expert-parent'), answerId, new AbortController().signal,
+    )
+
+    const catalog = async (scope?: Agent): Promise<string[]> => {
+      const skills = scope === undefined
+        ? await ctx.skills.list({ cwd: process.cwd() })
+        : await ctx.skills.list({ cwd: process.cwd(), scope })
+      return skills.map(skill => skill.name)
+    }
+    expect(await catalog()).not.toContain('expert-prompt-refiner')
+    const refinementChild = children[0]
+    if (refinementChild === undefined) throw new Error('the refinement child was not created')
+    expect(await catalog(refinementChild)).toContain('expert-prompt-refiner')
+
+    // A sibling subagent of the same expert starts outside a refinement window.
+    const sibling = await ctx.agents.create({
+      sessionId: SessionId('sibling-child'),
+      parentAgent: parent.agent,
+      meta: { parentSession: parent.agent.session.header.id, origin: 'subagent' },
+      setup: async agentCtx => void await ctx.agentPresets.mount(agentCtx, 'interview'),
+    })
+    expect(await catalog(sibling.agent)).not.toContain('expert-prompt-refiner')
   })
 })

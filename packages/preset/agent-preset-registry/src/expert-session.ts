@@ -28,7 +28,11 @@ declare module '@deepseek-ai/dsh-session/types' {
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
-    /** Evidence context injected into the refinement child's opening request. */
+    /** Evidence context injected into the refinement child's opening request.
+     * Readers without the registry preserve the message and derive the rest of the
+     * transcript; the evidence window the producer rebuilds is its own projection.
+     * @persistenceAttribution
+     */
     'expert-refinement': { kind: 'expert-refinement' }
   }
 }

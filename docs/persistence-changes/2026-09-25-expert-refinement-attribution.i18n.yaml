@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-09-25-expert-refinement-attribution.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-09-25-expert-refinement-attribution.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-09-25-expert-refinement-attribution:
+  en: 40061e6dea65007f
+  zh: d74855f19a91b36c
+/2026-09-25-expert-refinement-attribution/summary:
+  en: 70459f952f5551ed
+  zh: 6a89e1089940c60c
+/2026-09-25-expert-refinement-attribution/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-09-25-expert-refinement-attribution/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-09-25-expert-refinement-attribution/compatibility:
+  en: 49767f55e842bc2e
+  zh: 8479674b493ccde0
+/2026-09-25-expert-refinement-attribution/verification:
+  en: 5e34b5a3b8fea42e
+  zh: 2fe61f9469759f77
+/2026-09-25-expert-refinement-attribution/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

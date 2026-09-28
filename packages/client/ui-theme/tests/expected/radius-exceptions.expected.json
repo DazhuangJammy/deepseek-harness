@@ -1,4 +1,30 @@
 {
+  "ui-agent-preset/src/client/ExpertOptimizeAction.module.css": [
+    ".action: border-radius: 6px"
+  ],
+  "ui-agent-preset/src/client/ExpertPanel.module.css": [
+    ".iconButton, .iconChoice: border-radius: 6px",
+    ".field input, .field textarea: border-radius: 6px",
+    ".history li button: border-radius: 6px",
+    ".rowIcon: border-radius: 6px",
+    ".diffGrid: border-radius: 6px"
+  ],
+  "ui-agent-preset/src/client/ExpertWelcome.module.css": [
+    ".icon: border-radius: 6px"
+  ],
+  "ui-brand-official/src/client/Brand.module.css": [
+    ".preview: border-radius: 6px",
+    ".mark, .previewMark: border-radius: 6px",
+    ".field input: border-radius: 6px"
+  ],
+  "ui-commands/src/client/PopupSelectView.module.css": [
+    ".secondaryAction: border-radius: 6px"
+  ],
+  "ui-learning/src/client/LearningView.module.css": [
+    ".processFlow: border-radius: 6px",
+    ".dictionaryButton: border-radius: 6px",
+    ".dictionaryTerm: border-radius: 6px"
+  ],
   "ui-schedule/src/client/ClockPicker.module.css": [
     ".option: border-radius: 10px"
   ],

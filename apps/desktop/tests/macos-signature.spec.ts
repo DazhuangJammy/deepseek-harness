@@ -134,6 +134,7 @@ describe('desktop macOS release signature', () => {
     const config = createElectronBuilderConfig({
       DSH_DESKTOP_APP_ID: RELEASE_ENVIRONMENT.DSH_DESKTOP_APP_ID,
       DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
+      DSH_DESKTOP_MANDATORY_UPDATE_CONFIG: RELEASE_ENVIRONMENT.DSH_DESKTOP_MANDATORY_UPDATE_CONFIG,
       DSH_DESKTOP_TARGET_PLATFORM: 'darwin',
       DSH_DESKTOP_TARGET_ARCH: 'arm64',
       DSH_DESKTOP_UNSIGNED: '1',

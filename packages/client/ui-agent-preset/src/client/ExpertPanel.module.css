@@ -362,7 +362,7 @@
 }
 
 .editableDiff:focus-within {
-  box-shadow: inset 0 0 0 1px var(--dsw-alias-brand-primary);
+  box-shadow: inset 0 0 0 1px var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
 }
 
 @media (forced-colors: active) {

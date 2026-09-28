@@ -38,7 +38,9 @@ type RenderSlotChainBinding = (key: string, owner: object, opts?: ChainRenderOpt
  * Fixed-Session renderer bound to one registration's explicit slot allowlist.
  * The component renders the slot's occupant against a caller-retained Session
  * generation instead of the surrounding scope, so an entry can embed another
- * Session's view without adopting it.
+ * Session's view without adopting it. Slot keys stay strings: `StrictSessionSlotKey`
+ * derives from the `SlotMap` merges owned by consumer packages, so this package's
+ * program sees the type as `never`.
  */
 const fixedSessionSlotViewCache = new WeakMap<StoredEntry, FC<FixedSessionSlotViewProps<StrictSessionSlotKey>>>()
 
@@ -51,10 +53,10 @@ function fixedSessionSlotView(
   const authorized = new Set(entry.fixedSessionSlots ?? [])
   View = function FixedSessionSlotView({ session, slot, owner, options }): ReactNode {
     if (!authorized.has(slot)) {
-      throw new SlotOwnershipError(`fixed Session slot '${slot}' is not authorized by this entry`)
+      throw new SlotOwnershipError(`fixed Session slot '${String(slot)}' is not authorized by this entry`)
     }
     if (host.specOf(slot)?.scope !== 'session') {
-      throw new SlotOwnershipError(`fixed Session slot '${slot}' is not a declared strict-Session slot`)
+      throw new SlotOwnershipError(`fixed Session slot '${String(slot)}' is not a declared strict-Session slot`)
     }
     return (
       <FixedSessionScopeProvider session={session}>

@@ -4,8 +4,8 @@ import type {
   HostObservable,
   KeyedStandardSource,
   MaybeSnapshotSelectorHook,
+  SessionAreaProps,
   SlotRendererHost,
-  SlotScopeTargetMap,
   SnapshotSelectorHook,
   StandardSourceBinding,
 } from '@deepseek-ai/dsh-client-ui-slots'
@@ -188,7 +188,7 @@ export function FixedSessionScopeProvider({
   session,
   children,
 }: {
-  session: SlotScopeTargetMap[keyof SlotScopeTargetMap & 'session']
+  session: NonNullable<SessionAreaProps['session']>
   children: ReactNode
 }) {
   const host = useHost()

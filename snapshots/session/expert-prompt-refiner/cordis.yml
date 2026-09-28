@@ -1,7 +1,6 @@
 # Register the bundled expert skill without changing the headless Agent's composition.
 - insert:
-    - id: agent-presets
-      name: '@deepseek-ai/dsh-agent-presets'
+    - id: agent-preset-registry
+      name: '@deepseek-ai/dsh-agent-preset-registry'
       config:
         default: standard
-        includeUserRoot: false

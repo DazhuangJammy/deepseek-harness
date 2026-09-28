@@ -1,6 +1,6 @@
 # Keyless replay route plus the bundled expert skill registration.
 - id: llm-deepseek
-  name: '@deepseek-ai/dsh-llm-deepseek'
+  name: '@deepseek-ai/dsh-llm-deepseek-api-key'
   disabled: true
 
 - id: plugin-package-inventory-deepseek
@@ -37,8 +37,7 @@
               - id: deepseek-v4-flash
               - id: deepseek-v4-pro
 
-    - id: agent-presets
-      name: '@deepseek-ai/dsh-agent-presets'
+    - id: agent-preset-registry
+      name: '@deepseek-ai/dsh-agent-preset-registry'
       config:
         default: standard
-        includeUserRoot: false

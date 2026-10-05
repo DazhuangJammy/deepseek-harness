@@ -94,9 +94,9 @@ kind: "package-reference"
 
 <a id="known-limitations-and-deferred-work"></a>
 
-
 这些限制定义哪些插件会有页面、分组有多新鲜；它们是当前包约束。
 
+- **分区没有自己的标签页**——在功能插件注册标签页之前它只显示空提示；壳自己填不满分区。
 - **只有宿主平面的插件有页面**：由 agent preset 挂载的插件把配置内联在该 preset 的 `agent.cordis.yml` 中，且根本无法注册 settings 命名空间，因此本包不会为它注册任何东西。编辑那些值仍是 preset 编辑器的职责。
 - **页面仍然需要一份浏览器 bundle**：浏览器半侧必须是按客户端模块系统的 lazy-CJS factory 格式构建的 `dsh.client` 包，而产出它的 `clientBundle` 预设位于 `../../../packages/client/tsdown.client.ts`，并非已发布的包，因此本仓库之外的插件得自行复刻该构建。
 - **被服务的命名空间只在两种信号上重读**：协议通告的是 settings 文档提交与连接重置，而非注册行为，因此在镜像读取之后才被其拥有方注册的命名空间，要等下一次文档提交或重连才会加入官方分组。

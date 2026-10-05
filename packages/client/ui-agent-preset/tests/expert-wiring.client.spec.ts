@@ -80,7 +80,21 @@ function harness() {
   }
   const context = {
     // Developer tools gate every selection surface this plugin registers.
-    configForms: { developerTools: { enabled: createSnapshotStore(true) } },
+    configForms: {
+      developerTools: { enabled: createSnapshotStore(true) },
+      get: (namespace: string) => ({
+        getSnapshot: () => ({
+          status: 'ready' as const,
+          value: namespace === 'ui-settings' ? { enabled: true } : undefined,
+          base: undefined,
+          user: undefined,
+          revision: 1,
+          writable: true,
+          mode: 'host' as const,
+        }),
+        subscribe: () => () => {},
+      }),
+    },
     effect: (factory: () => unknown) => {
       const disposer = factory()
       if (typeof disposer === 'function') disposers.push(disposer as () => void)

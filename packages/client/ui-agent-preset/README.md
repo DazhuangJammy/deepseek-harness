@@ -25,7 +25,11 @@ Use this package to choose the agent preset for a new Web GUI session, manage co
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this plugin alongside the settings and conversation packages; the management section then shows the preset roster. Coding Tools in General Settings decide whether a mode can be chosen at all: with them off the new-session picker disappears, while the settings cards still choose the saved default that keeps composing new tasks and Creator stays available. With Coding Tools on, choosing a healthy default also synchronizes the blank session on the current new-task surface; with them off, a reused blank session keeps its preset. Creator starts a new task using the `cordis` preset.
+Mount this plugin alongside the settings and conversation packages; the management section then shows the preset roster.
+
+With Coding Tools off in General Settings, the new-session picker and Settings roster offer Standard, Creator, and custom presets; turning them on also offers PTC and Minimal. Default selection and the Creator entry remain available in both states. Choosing a healthy default also synchronizes the blank session on the current new-task surface. Creator starts a new task using the `cordis` preset.
+
+Turning Coding Tools off clears all unapplied choices through the existing Developer tools subscription. Once the off value is accepted, a host-backed connection resets a saved built-in PTC or Minimal default to Standard. Saved Standard, Creator, and custom defaults (including named PTC or Minimal overrides) stay unchanged. The user can select an available preset again after turning Coding Tools off. Existing sessions, including blank sessions reused by New Session, keep their selected mode; its label remains visible even when that mode is absent from the menu. Turning Coding Tools back on does not restore the old default or cleared choice. A remote connection using in-memory settings does not rewrite the Host's default. If Standard is missing or broken, the default remains unchanged and an error is shown.
 
 The shipped roster contains `standard`, `ptc`, `minimal`, `cordis`, and `chat`. The `chat` preset keeps the normal Session transcript and model route, uses Standard mode's shell and filesystem tools for uploaded files, and omits skills, project instructions, runtime context, and compaction.
 
@@ -47,6 +51,10 @@ Each finalized assistant message in an expert Session carries an Optimize expert
 
 -----
 
+**Let the agent create a plugin** in the Plugins page's **Add plugin** arrow menu enters the same Creator flow as Settings. It submits no message and preserves unsent drafts. While the roster loads or Creator is unavailable, the menu item is disabled with an explanation. Both entries show a Toast with the reason if the Host refuses the preset switch.
+
+Entering Creator selects `cordis` for the receiving blank Session without changing the new-task default or Coding Tools setting. If no workspace or blank Session is bound yet, the choice waits for that binding. After the choice is applied, the Creator Session keeps its preset; a later newly created Session uses the configured default, such as Standard.
+
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
 
@@ -54,6 +62,8 @@ Each finalized assistant message in an expert Session carries an Optimize expert
 <summary>Implementation internals — click to expand</summary>
 
 The settings section writes the Host's existing `agent-preset-registry` namespace through `settings.update`, and its make-default action writes `selectedDefault`. After that write, the Host roster supplies the effective default, and the chip controller's `agentPresets/select` path carries it to the same still-blank session; expert selection uses that same guarded path. `agentPresets/list` supplies the roster and marks the current default, and `agentPresets/read` one declaration's YAML for the viewer; the picker, blank-session synchronization and read-only session label use recorded preset identities. Expert management uses the typed expert endpoints and one shared browser store. The expert store keys optimization state by Session, so two open conversations cannot exchange candidates. During optimization, the store retains the observed child generation under `controllerOperation` without changing the selected main Session, and the renderer-injected `FixedSessionSlotView` binds the existing conversation slot to that retained reference; every exit from the running state releases it. The existing command menu owns expert search and selection; the right Sidebar owns management and review. [`dsh-client-connection`](../connection/README.md) authenticates all of these Host methods with the same browser session. The section re-reads on its own actions, `settings/document-updated`, and `connection/reset`.
+
+`CreatePluginMenuItem` contributes to `plugins.add.actions` using the shared roster store. Its selection calls the owner's `onDismiss()` before the same `startCreatorDraft` callback exposed to Settings as `creatorDraft`. That callback stages `cordis` through `AgentPresetSeatController` and opens the task through `uiWorkspace.startSession`; it can reuse a blank Session and applies the staged choice when a Session binding becomes available. The choice is consumed once applied. Both Coding Tools states use the same picker and selection store, and `AgentPresetSeat` renders refusals through the shared `Toast` component.
 
 </details>
 

@@ -94,9 +94,9 @@ None; this package neither assembles nor sends a provider request.
 
 <a id="known-limitations-and-deferred-work"></a>
 
-
 These limits define which plugins get a page and how fresh the group is; they are current package constraints.
 
+- **The section has no tab of its own** — it renders its empty line until a feature plugin registers one; the shell cannot fill the section alone.
 - **Only host-plane plugins have a page** — a plugin an agent preset mounts carries its configuration inline in that preset's `agent.cordis.yml` and cannot register a settings namespace at all, so this package registers nothing for it. Editing those values remains the preset editor's job.
 - **A page still needs a browser bundle** — the browser half must be a `dsh.client` package built in the client module system's lazy-CJS factory format, and the `clientBundle` preset that emits it lives in `../../../packages/client/tsdown.client.ts` rather than a published package, so a plugin outside this repository has to reproduce that build itself.
 - **The served namespaces re-read on two signals only** — the wire announces settings-document commits and connection resets, not registrations, so a namespace whose owner registers after the mirror's read joins the Official group on the next document commit or reconnect.

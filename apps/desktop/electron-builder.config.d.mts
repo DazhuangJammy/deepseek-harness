@@ -29,7 +29,6 @@ export interface DesktopElectronBuilderConfig {
     readonly entitlementsInherit: string
     readonly identity: string | undefined
     readonly forceCodeSigning: boolean
-    readonly hardenedRuntime: boolean
     readonly notarize: boolean
     readonly signIgnore: readonly string[]
   }
@@ -57,7 +56,7 @@ export interface DesktopElectronBuilderConfig {
   readonly beforePack: (context: BeforePackContext) => Promise<void>
   readonly afterPack: (context: AfterPackContext) => Promise<void>
   readonly afterSign: (context: AfterPackContext) => Promise<void>
-  readonly artifactBuildCompleted: ((artifact: { readonly file: string }) => Promise<void> | undefined) | undefined
+  readonly artifactBuildCompleted: (artifact: { readonly file: string }) => Promise<void> | undefined
   readonly publish: readonly [{ readonly provider: 'generic', readonly url: string }] | null
 }
 

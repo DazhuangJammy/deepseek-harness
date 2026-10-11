@@ -27,20 +27,20 @@ id: 2026-09-25-expert-refinement-attribution
 baseline: false
 changes:
   - root: "event:agent/inbox/spliced"
-    previous: "2026-09-21-user-question-reply"
-    after: "08b16c8c6ce8990aa2d54120fb48aca535b08c6c06136d62078c6a4dc4194ac7"
+    previous: "2026-10-05-working-directory-attribution"
+    after: "3990d2ad13a61836eef49df85e3c19eaff0b700ca524d3d0c17205def6070d3f"
     decision: same-version
   - root: "event:developer/message"
-    previous: "2026-09-21-user-question-reply"
-    after: "674cc0a7ba1742d51cbd4a93a4b9089827760b19dfbf2c3102deff874243f82f"
+    previous: "2026-10-05-working-directory-attribution"
+    after: "6e900dc7b08f06da6db6fb124aaed0548a8a4196b8dc82f6ae1ad0a57ec92a63"
     decision: same-version
   - root: "event:session/title-llm-request"
-    previous: "2026-09-21-user-question-reply"
-    after: "d5622073c8667eb57c1e879f25216f5c4096ac71cae8f22c4cc0d91468b7274f"
+    previous: "2026-10-07-title-reasoning-effort"
+    after: "e6bfe96ee765dcccb693a19042fd2eca7984c9e8d0e6228ce228b076085a1a1b"
     decision: same-version
   - root: "event:user/message"
-    previous: "2026-09-21-user-question-reply"
-    after: "c0baf254bc3e452d8d6fe685c1c0488178b5e0710d511f31d88e15bfdcf9e7a7"
+    previous: "2026-10-05-working-directory-attribution"
+    after: "8f0d96b281af39185b736acbf6a952e607da21410807f2ca7ca53d3aa3187964"
     decision: same-version
 ```
 

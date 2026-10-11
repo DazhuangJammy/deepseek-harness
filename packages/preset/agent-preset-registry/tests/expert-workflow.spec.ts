@@ -29,6 +29,20 @@ import type { ExpertOptimizationOutcome, ExpertProposalId } from '../src/types.t
 const roots: string[] = []
 const contexts: Context[] = []
 
+/**
+ * Supply the directory collaborator composed preset rows inject, without the
+ * filesystem behavior this workflow never exercises.
+ * @param ctx - context owning the mounted preset composition.
+ */
+function provideWorkingDirectory(ctx: Context): void {
+  const directory = (session: { header: { cwd?: string } }): string => session.header.cwd ?? process.cwd()
+  ctx.provide('workingDirectory' as never, {
+    get: (session: { header: { cwd?: string } }) => directory(session),
+    ensure: (agent: Agent) => Promise.resolve(directory(agent.session)),
+    set: (agent: Agent) => Promise.resolve(directory(agent.session)),
+  } as never)
+}
+
 afterEach(async () => {
   await Promise.allSettled(contexts.splice(0).map(ctx => ctx.fiber.dispose()))
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
@@ -69,6 +83,7 @@ async function workflowHarness(
   ctx.loader.builtins.include = Include
   ctx.loader.builtins['@deepseek-ai/dsh-persona'] = Persona
   for (const name of ['shell', 'shellEnv', 'fs', 'subprocess']) ctx.provide(name as never, {} as never)
+  provideWorkingDirectory(ctx)
   await ctx.plugin(LlmRuntime)
   await ctx.plugin(SessionStore)
   await ctx.plugin(SessionProjectionRegistry)
@@ -124,6 +139,7 @@ describe('expert optimization workflow', () => {
     for (const name of ['shell', 'shellEnv', 'fs', 'subprocess']) {
       ctx.provide(name as never, {} as never)
     }
+    provideWorkingDirectory(ctx)
     await ctx.plugin(LlmRuntime)
     await ctx.plugin(SessionStore)
     await ctx.plugin(SessionProjectionRegistry)

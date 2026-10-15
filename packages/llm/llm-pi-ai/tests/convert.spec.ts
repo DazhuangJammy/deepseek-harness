@@ -913,6 +913,11 @@ describe('mapStopReason / mapUsage', () => {
       })
   })
 
+  it('keeps whitespace-only reply text successful', () => {
+    expect(mapStopReason(assistant({ stopReason: 'stop', content: [{ type: 'text', text: ' \n\t' }] })))
+      .toEqual({ kind: 'stop' })
+  })
+
   it('defaults the error message when pi-ai omits it', () => {
     expect(mapStopReason(assistant({ stopReason: 'error' })))
       .toEqual({ kind: 'error', failure: { message: 'pi-ai stream error', code: 'PI_AI_ERROR' } })

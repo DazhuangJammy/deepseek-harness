@@ -10,7 +10,7 @@ Thinking-capable models can finish a well-formed response after emitting reasoni
 
 ## Decision
 
-The DeepSeek and pi-ai adapters classify a terminal `stop` as `EMPTY_RESPONSE` unless the response carries non-whitespace reply text or a tool call. Reasoning remains in the failed attempt's embedded stream, but it cannot make a response successful by itself. The existing `agent/request-error` and `dsh-llm-retry` path retries the request within the provider's configured budget; exhausting that budget produces an explicit turn failure. `max-tokens`, tool-call, error, and aborted finishes keep their existing classifications.
+The DeepSeek and pi-ai adapters classify a terminal `stop` as `EMPTY_RESPONSE` unless the response carries reply text or a tool call. Reasoning remains in the failed attempt's embedded stream, but it cannot make a response successful by itself. The existing `agent/request-error` and `dsh-llm-retry` path retries the request within the provider's configured budget; exhausting that budget produces an explicit turn failure. `max-tokens`, tool-call, error, and aborted finishes keep their existing classifications.
 
 This decision extends the archived [empty model completion rule](../../archived/bug-fix/2026-07-24-empty-model-response-is-retryable.md), which deliberately accepted reasoning-only responses. The product presents reasoning as process rather than the requested answer, so a successful turn requires output the user or loop can act on.
 

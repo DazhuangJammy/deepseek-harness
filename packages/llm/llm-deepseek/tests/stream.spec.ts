@@ -91,13 +91,18 @@ describe('Messages stream', () => {
     await expect(chunks(translate(events(textEvents.slice(0, -1)), MODEL))).rejects.toMatchObject({ code: 'STREAM_CLOSED' })
   })
 
-  it.each([
-    ['reasoning only', { type: 'thinking', thinking: 'mull' }],
-    ['whitespace-only text', { type: 'text', text: ' \n\t' }],
-  ])('classifies a stop that carries %s as EMPTY_RESPONSE', async (_case, content_block) => {
+  it('classifies a reasoning-only stop as EMPTY_RESPONSE', async () => {
     await expect(chunks(translate(events([start,
-      { type: 'content_block_start', index: 0, content_block },
+      { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: 'mull' } },
       { type: 'content_block_stop', index: 0 }, ...end()]), MODEL))).rejects.toMatchObject({ code: 'EMPTY_RESPONSE' })
+  })
+
+  it('keeps whitespace-only reply text as content', async () => {
+    const result = await chunks(translate(events([start,
+      { type: 'content_block_start', index: 0, content_block: { type: 'text', text: ' \n\t' } },
+      { type: 'content_block_stop', index: 0 }, ...end()]), MODEL))
+    expect(result).toContainEqual({ type: 'text-delta', index: 0, text: ' \n\t' })
+    expect(result.at(-1)).toMatchObject({ type: 'finish', reason: { kind: 'stop' } })
   })
 })
 

@@ -10,7 +10,7 @@ Status: implemented
 
 ## 决策
 
-DeepSeek 与 pi-ai 适配器只在响应带有非空白回答正文或工具调用时，才把终止 `stop` 视为成功；否则将其归类为 `EMPTY_RESPONSE`。Reasoning 仍保存在失败尝试的嵌入式 stream 中，但不能单独让响应成功。既有 `agent/request-error` 与 `dsh-llm-retry` 路径会在提供方配置预算内重试请求；预算耗尽后会产生明确的轮次失败。`max-tokens`、工具调用、错误与中止 finish 保持原有分类。
+DeepSeek 与 pi-ai 适配器只在响应带有回答正文或工具调用时，才把终止 `stop` 视为成功；否则将其归类为 `EMPTY_RESPONSE`。Reasoning 仍保存在失败尝试的嵌入式 stream 中，但不能单独让响应成功。既有 `agent/request-error` 与 `dsh-llm-retry` 路径会在提供方配置预算内重试请求；预算耗尽后会产生明确的轮次失败。`max-tokens`、工具调用、错误与中止 finish 保持原有分类。
 
 本决策扩展了已归档的[空模型补全规则](../../archived/bug-fix/2026-07-24-empty-model-response-is-retryable.md)，该规则曾有意接受仅 reasoning 的响应。产品把 reasoning 呈现为过程，而不是用户请求的答案，因此成功轮次必须包含用户或循环可以采取行动的输出。
 

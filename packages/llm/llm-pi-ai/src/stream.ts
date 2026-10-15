@@ -73,9 +73,9 @@ function classifyPiAiError(message: string): string {
  * @param contextWindow - resolved catalog capacity for usage-based overflow detection.
  * @returns the mapped harness reason. Recognized error text, `stop` usage above
  *   `contextWindow`, and zero-output `length` usage that fills the window map
- *   to `CONTEXT_WINDOW_EXCEEDED`; a `stop` without non-whitespace reply text
- *   or a tool call maps to an `EMPTY_RESPONSE` error, while terminal `pending`
- *   and `deferred` states map to non-retryable `PI_AI_ERROR` failures.
+ *   to `CONTEXT_WINDOW_EXCEEDED`; a `stop` without a text or tool-call block
+ *   maps to an `EMPTY_RESPONSE` error, while terminal `pending` and `deferred`
+ *   states map to non-retryable `PI_AI_ERROR` failures.
  */
 export function mapStopReason(message: AssistantMessage, contextWindow?: number): FinishReason {
   const piAiOverflow = isContextOverflow(message, contextWindow)
@@ -94,8 +94,8 @@ export function mapStopReason(message: AssistantMessage, contextWindow?: number)
 
   switch (message.stopReason) {
     case 'stop':
-      const hasReply = message.content.some(block => block.type === 'toolCall'
-        || (block.type === 'text' && /\S/.test(block.text)))
+      // A reasoning block alone is not an answer; any reply text or tool call is.
+      const hasReply = message.content.some(block => block.type === 'text' || block.type === 'toolCall')
       if (!hasReply) {
         return {
           kind: 'error',

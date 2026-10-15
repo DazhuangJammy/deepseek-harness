@@ -32,12 +32,12 @@ export const ACCOUNT_QUOTA_EXCEEDED_CODE = 'ACCOUNT_QUOTA'
 
 /**
  * Canonical provider-neutral code for a response that completed normally but
- * carried no reply text or tool call. Providers occasionally emit a degenerate
- * completion with no blocks or reasoning only; adapters classify it as this
- * failure instead of yielding an assistant message with no answer, because it
- * silently ends the turn with nothing for the user or the loop to act on. The
- * attempt produced no actionable output, so retry policy treats it as safe to
- * repeat.
+ * carried no reply block. Providers occasionally emit a degenerate completion
+ * (a terminal stop with no content blocks); thinking-capable models also finish
+ * after reasoning alone. Adapters classify both as this failure instead of
+ * yielding an assistant message with no answer, because it silently ends the
+ * turn with nothing for the user or the loop to act on. The attempt produced no
+ * actionable output, so retry policy treats it as safe to repeat.
  */
 export const EMPTY_RESPONSE_CODE = 'EMPTY_RESPONSE'
 

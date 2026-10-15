@@ -57,6 +57,22 @@ function collidingCommitBodies(tree: string, length: number): [string, string] {
   }
 }
 
+/** One commit object body whose name begins with `length` decimal digits, found by hashing candidates. */
+function decimalCommitBody(tree: string, length: number): string {
+  const algorithm = tree.length === 64 ? 'sha256' : 'sha1'
+  const digits = new RegExp(`^\\d{${String(length)}}`)
+  for (let index = 0; ; index += 1) {
+    const body = `tree ${tree}\nauthor T <t@example.invalid> 0 +0000\ncommitter T <t@example.invalid> 0 +0000\n\ndecimal ${String(index)}\n`
+    const name = createHash(algorithm).update(`commit ${String(Buffer.byteLength(body))}\0${body}`).digest('hex')
+    if (digits.test(name)) return body
+  }
+}
+
+/** Abbreviated reference at or above `length` that keeps a hexadecimal letter, so it is never read as a decimal number. */
+function identifierPrefix(commit: string, length: number): string {
+  return commit.slice(0, Math.max(length, commit.search(/[a-f]/) + 1))
+}
+
 describe('unique object-name prefix search', () => {
   it.each([
     [['aaa1', 'bbb2', 'ccc3'], 'bbb', 'bbb2'],
@@ -84,9 +100,9 @@ describe('maintained repository reference policy', () => {
   it('rejects complete and abbreviated commit identifiers in tracked, staged, and new files', (test) => {
     const fixture = repository(test)
     fixture.write('tracked.md', `release\n${fixture.commit}\n${fixture.commit.toUpperCase()}\n`)
-    fixture.write('staged.md', fixture.commit.slice(0, 7))
+    fixture.write('staged.md', identifierPrefix(fixture.commit, 7))
     fixture.git(['add', 'staged.md'])
-    fixture.write('new.md', `\0${fixture.commit.slice(0, 12)}`)
+    fixture.write('new.md', `\0${identifierPrefix(fixture.commit, 12)}`)
 
     expect(scanRepositoryReferences(fixture.root)).toEqual(expect.arrayContaining([
       { file: 'tracked.md', line: 2, kind: 'commit-hash' },
@@ -140,6 +156,16 @@ describe('maintained repository reference policy', () => {
     expect(scanRepositoryReferences(fixture.root)).toEqual([])
   })
 
+  it('accepts a decimal number that shares a commit\'s abbreviated name', (test) => {
+    const fixture = repository(test)
+    const name = fixture.git(['hash-object', '-t', 'commit', '-w', '--stdin'], decimalCommitBody(fixture.tree, 7))
+    fixture.write('decimal.md', `size = ${name.slice(0, 7)}\n`)
+    expect(scanRepositoryReferences(fixture.root)).toEqual([])
+    // The same object under a prefix that carries a hexadecimal letter remains a reference.
+    fixture.write('lettered.md', identifierPrefix(name, 7))
+    expect(scanRepositoryReferences(fixture.root)).toEqual([{ file: 'lettered.md', line: 1, kind: 'commit-hash' }])
+  })
+
   it('accepts a prefix that two available commits share and rejects a longer unique prefix', (test) => {
     const fixture = repository(test)
     const [first, second] = collidingCommitBodies(fixture.tree, 7).map(body =>
@@ -149,7 +175,7 @@ describe('maintained repository reference policy', () => {
     while (first[shared] === second[shared]) shared += 1
     expect(shared).toBeGreaterThanOrEqual(7)
     fixture.write('ambiguous.md', first.slice(0, 7))
-    fixture.write('unique.md', first.slice(0, shared + 1))
+    fixture.write('unique.md', identifierPrefix(first, shared + 1))
     expect(scanRepositoryReferences(fixture.root)).toEqual([{ file: 'unique.md', line: 1, kind: 'commit-hash' }])
   })
 

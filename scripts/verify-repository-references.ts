@@ -12,6 +12,10 @@ const organizationUrl = new RegExp(`\\bgithub\\.com/${organization}(?![a-z0-9-])
 // The independent kit repository owns the engine source and documentation.
 const kitRepositoryUrl = new RegExp(`\\bgithub\\.com/${organization}/libreoffice-kit(?:\\.git)?(?=/|[^a-zA-Z0-9_.-]|$)`, 'g')
 const commitCandidate = /(?<![a-z0-9])[\da-f]{7,40}(?![a-z0-9])/gi
+// A hexadecimal identifier carries at least one letter. A run of decimal digits
+// is a number in the source — a byte size, a count, a timestamp — and such a
+// field can coincide with an abbreviated commit name without naming anything.
+const hexadecimalLetter = /[a-f]/
 const excludedPrefixes = ['vendor/', '.agents/notes/archived/']
 const gitOutputLimit = 64 * 1024 * 1024
 // One 41-byte line per object; 1.2 million objects produce about 49 MiB.
@@ -105,13 +109,17 @@ export function uniquePrefixMatch(objects: readonly string[], prefix: string): s
 
 /**
  * Resolve commit-identifier candidates in maintained sources against the local object database.
+ * A candidate must carry a hexadecimal letter, so a decimal number that shares a
+ * commit's abbreviated name is not reported as a reference to it.
  * @param repoRoot - Working tree whose Git objects are inspected.
  * @param sources - File texts or symlink targets to extract candidates from.
  * @returns Lowercase candidates that name exactly one available object, which is a commit.
  */
 export function repositoryCommits(repoRoot: string, sources: Iterable<string>): Set<string> {
   const candidates = [...new Set([...sources].flatMap(source =>
-    [...source.matchAll(commitCandidate)].map(match => match[0].toLowerCase())))]
+    [...source.matchAll(commitCandidate)]
+      .map(match => match[0].toLowerCase())
+      .filter(candidate => hexadecimalLetter.test(candidate))))]
   if (candidates.length === 0) return new Set()
   // Git resolves prefixes across all available objects, including unreachable and alternate ones;
   // one listing of those objects replaces one Git prefix lookup per candidate.

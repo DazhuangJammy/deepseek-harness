@@ -218,18 +218,6 @@ describe('ui-brand-official browser half', () => {
     expect(face.hooks.editor.getSnapshot()).toMatchObject({ failed: true, saving: false, dirty: false })
   })
 
-  it('does not report a process-local write as failed', async () => {
-    const { form, subject } = await withForm()
-    const face = controllerFace(subject)
-    form.publish({ mode: 'memory' })
-    form.mutate.mockResolvedValue(false)
-
-    face.edit({ name: 'New' })
-    face.save()
-    await settled()
-    expect(face.hooks.editor.getSnapshot()).toMatchObject({ failed: false, saving: false, dirty: false })
-  })
-
   it('restores the accepted value or the defaults on reset', async () => {
     const accepted = await withForm()
     const acceptedForm = accepted.form

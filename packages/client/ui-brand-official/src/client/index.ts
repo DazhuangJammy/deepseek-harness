@@ -54,11 +54,6 @@ class BrandController {
     this.publishEditor()
   }
 
-  /** Whether one settlement is a failure: a refused *durable* write is, a process-local one is not. */
-  private refusalFailed(): boolean {
-    return this.form?.getSnapshot().mode === 'host'
-  }
-
   face() {
     return {
       hooks: { brand: this.store, editor: this.editor },
@@ -97,7 +92,7 @@ class BrandController {
           this.store.set({ ...value })
         }
         this.dirty = false
-        this.failed = !accepted && this.refusalFailed()
+        this.failed = !accepted
       }
     } catch {
       this.failed = true
@@ -124,7 +119,7 @@ class BrandController {
         this.draft = { ...value }
         this.store.set({ ...value })
         this.dirty = false
-        this.failed = !accepted && this.refusalFailed()
+        this.failed = !accepted
       }
     } catch {
       this.failed = true

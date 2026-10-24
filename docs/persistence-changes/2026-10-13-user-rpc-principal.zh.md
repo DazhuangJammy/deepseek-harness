@@ -27,20 +27,20 @@ id: 2026-10-13-user-rpc-principal
 baseline: false
 changes:
   - root: "event:agent/inbox/spliced"
-    previous: "2026-10-05-working-directory-attribution"
-    after: "0755b7d1128319ba2e389619cbbf2c961ad648882b4e91da7f3e9582cc8a2034"
+    previous: "2026-09-25-expert-refinement-attribution"
+    after: "1867dbc961286912339d54af5cc8596c598319229ccc90fa10bb41810f87f743"
     decision: same-version
   - root: "event:developer/message"
-    previous: "2026-10-05-working-directory-attribution"
-    after: "97e0162f983c27456ec71269fb4976b1851588b8c1aeac5d071d43e11f95e03c"
+    previous: "2026-09-25-expert-refinement-attribution"
+    after: "5da8c599a6d8dffc9ac282e64f7574e60c80e8fabc179c208f2f53e71f7a463e"
     decision: same-version
   - root: "event:session/title-llm-request"
-    previous: "2026-10-07-title-reasoning-effort"
-    after: "79a4c87f8bfb4d6d05cd9952b99210d6a7db3b478c4a01d94b4c50602308c056"
+    previous: "2026-09-25-expert-refinement-attribution"
+    after: "bfe31f830e4a173950c5f24a4582d40130f38ba4eedab2281275e03d4cde3c3e"
     decision: same-version
   - root: "event:user/message"
-    previous: "2026-10-05-working-directory-attribution"
-    after: "2ae8594a998c9862a597129e782277bcc518266712a703b5c3161bdf552d13b8"
+    previous: "2026-09-25-expert-refinement-attribution"
+    after: "78a17c83e7a3670654169fa3bce67173538fa573b9760fb90654472ac3afdb96"
     decision: same-version
 ```
 

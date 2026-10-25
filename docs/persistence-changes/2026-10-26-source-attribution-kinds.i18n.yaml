@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-10-26-source-attribution-kinds.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-10-26-source-attribution-kinds.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-10-26-source-attribution-kinds:
+  en: 81fa61d0bbb6f8dc
+  zh: 6be453b6f309100e
+/2026-10-26-source-attribution-kinds/summary:
+  en: c58b70f21027fdc2
+  zh: 0f500f10557bbbbd
+/2026-10-26-source-attribution-kinds/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-10-26-source-attribution-kinds/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-10-26-source-attribution-kinds/compatibility:
+  en: 6fd5e7d038c551c3
+  zh: 74d505d0b6d67f06
+/2026-10-26-source-attribution-kinds/verification:
+  en: a3f7425694971054
+  zh: 6d64b4885fc3d903
+/2026-10-26-source-attribution-kinds/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

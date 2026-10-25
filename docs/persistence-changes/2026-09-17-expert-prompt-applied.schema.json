@@ -1,111 +1,19 @@
 {
   "formatVersion": 1,
   "roots": [
-    {
-      "key": "event:expert/prompt-applied",
-      "kind": "event",
-      "event": "expert/prompt-applied",
-      "surface": false,
-      "digest": "b0af06fa851fc7d94395555a72d0b9273cc66c7859fed70d5aff6c1b8945fbac",
-      "schema": {
-        "root": 0,
-        "nodes": [
-          {
-            "kind": "object",
-            "properties": [
-              {
-                "name": "data",
-                "type": 1,
-                "optional": false
-              },
-              {
-                "name": "ignorable",
-                "type": 8,
-                "optional": true
-              },
-              {
-                "name": "seq",
-                "type": 7,
-                "optional": false
-              },
-              {
-                "name": "time",
-                "type": 7,
-                "optional": false
-              },
-              {
-                "name": "type",
-                "type": 9,
-                "optional": false
-              }
-            ],
-            "indices": []
-          },
-          {
-            "kind": "object",
-            "properties": [
-              {
-                "name": "expertId",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "prompt",
-                "type": 2,
-                "optional": false
-              },
-              {
-                "name": "source",
-                "type": 3,
-                "optional": false
-              },
-              {
-                "name": "version",
-                "type": 7,
-                "optional": false
-              }
-            ],
-            "indices": []
-          },
-          {
-            "kind": "primitive",
-            "type": "string"
-          },
-          {
-            "kind": "union",
-            "types": [
-              4,
-              5,
-              6
-            ]
-          },
-          {
-            "kind": "literal",
-            "value": "branch-latest"
-          },
-          {
-            "kind": "literal",
-            "value": "manual-save"
-          },
-          {
-            "kind": "literal",
-            "value": "optimization-accepted"
-          },
-          {
-            "kind": "primitive",
-            "type": "number"
-          },
-          {
-            "kind": "literal",
-            "value": true
-          },
-          {
-            "kind": "literal",
-            "value": "expert/prompt-applied"
-          }
-        ]
-      }
-    }
+    {"key":"event:expert/prompt-applied","kind":"event","event":"expert/prompt-applied","surface":false,"digest":"b0af06fa851fc7d94395555a72d0b9273cc66c7859fed70d5aff6c1b8945fbac"}
   ],
-  "types": []
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "3dda233cb7f0f9ef": {"kind":"literal","value":"expert/prompt-applied"},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "59e916e6dc0b3309": {"kind":"literal","value":"manual-save"},
+    "b0af06fa851fc7d9": {"kind":"object","properties":[{"name":"data","type":"bc1c28a3c3f0f501","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"3dda233cb7f0f9ef","optional":false}],"indices":[]},
+    "b7968914f6405041": {"kind":"literal","value":"branch-latest"},
+    "baed6da2b88a4545": {"kind":"union","types":["59e916e6dc0b3309","b7968914f6405041","c2e5bc74c04d4ecf"]},
+    "bc1c28a3c3f0f501": {"kind":"object","properties":[{"name":"expertId","type":"4cd48f3e5108bd6e","optional":false},{"name":"prompt","type":"4cd48f3e5108bd6e","optional":false},{"name":"source","type":"baed6da2b88a4545","optional":false},{"name":"version","type":"0657d3ca5ac4e7bf","optional":false}],"indices":[]},
+    "c2e5bc74c04d4ecf": {"kind":"literal","value":"optimization-accepted"},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true}
+  }
 }

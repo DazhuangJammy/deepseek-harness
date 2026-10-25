@@ -45,7 +45,7 @@ import { AgentPresetSection } from './AgentPresetSection.tsx'
 import type { AgentPresetSectionInjected } from './AgentPresetSection.tsx'
 import { AgentPresetSeatController, type AgentPresetStage } from './seat-store.ts'
 import { AgentPresetSectionController } from './section-store.ts'
-import { en, zh, type AgentPresetSettingsKey } from './locales.ts'
+import { en, ja, es, fr, de, ru, pt, zh, type AgentPresetSettingsKey } from './locales.ts'
 import { AGENT_PRESET_SETTINGS_NS, AgentPresetSettingsController } from './settings-store.ts'
 import { ExpertUiController } from './expert-store.ts'
 import { ExpertPanel } from './ExpertPanel.tsx'
@@ -146,7 +146,7 @@ export function apply(ctx: ClientContext): void {
     (sessionId, proposalId, outcome) => { experts.settleOptimization(sessionId, proposalId, outcome) },
   ), 'ui-agent-preset: expert optimization settlements')
 
-  ctx.effect(() => ctx.locale.register('settings.agentPreset', { zh, en }), 'ui-agent-preset: settings row dictionaries')
+  ctx.effect(() => ctx.locale.register('settings.agentPreset', { zh, en, ja, es, fr, de, ru, pt }), 'ui-agent-preset: settings row dictionaries')
 
   // A running refinement's embedded child view borrows that child's Session
   // generation; plugin teardown returns every one of them.

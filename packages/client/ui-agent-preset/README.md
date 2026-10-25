@@ -25,7 +25,7 @@ Use this package to choose the agent preset for a new Web GUI session, manage co
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this plugin alongside the settings and conversation packages; the management section then shows the preset roster.
+Mount this plugin alongside the settings and conversation packages; the management section then shows the preset roster. Coarse-pointer devices show complete preset descriptions; other devices clamp them to four lines with the full text available on hover.
 
 With Coding Tools off in General Settings, the new-session picker and Settings roster offer Standard, Creator, and custom presets; turning them on also offers PTC and Minimal. Default selection and the Creator entry remain available in both states. Choosing a healthy default also synchronizes the blank session on the current new-task surface. Creator starts a new task using the `cordis` preset.
 

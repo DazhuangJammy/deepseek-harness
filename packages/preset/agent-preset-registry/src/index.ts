@@ -1,6 +1,7 @@
 /** Declarative Agent capability sets, activation and session binding. */
 import { randomUUID } from 'node:crypto'
-import { Context } from '@deepseek-ai/cordis'
+import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
+import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { bindScopeParent, createScope, scopeOf, scopeParentOf, type Scope, type ScopeKey, type ScopeParentBinding } from '@deepseek-ai/dsh-scope'
@@ -12,6 +13,7 @@ import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import type { ContentBlock, UserMessage } from '@deepseek-ai/dsh-llm'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { Session } from '@deepseek-ai/dsh-session'
 import { PERSONA_PREFIX_SECTION } from '@deepseek-ai/dsh-system-prompt'
 // Type-only: the optional `settings` service this registry keeps off the generated pages.
 import type {} from '@deepseek-ai/dsh-settings'
@@ -34,7 +36,7 @@ import { findExpertVersion, readExpertDocument, readExpertSummary,
 import { USER_PRESET_DIR, discoverExpertPresets, expertDefinition, scanRoot } from './expert-install.ts'
 import { buildExpertOptimizationTask, EXPERT_OPTIMIZATION_OUTPUT_SCHEMA,
   expertPromptRefinerRegistration, expertProposalFromOutput } from './expert-optimizer.ts'
-import { expertRefinementProjectionDefinition, type ExpertPromptApplicationSource } from './expert-session.ts'
+import { expertRefinementProjectionDefinition, type ExpertPromptApplicationSource, type ExpertRefinementProjection } from './expert-session.ts'
 
 export { agentPresetProjectionDefinition } from './session.ts'
 export { entryListProblem, type PresetDefinition } from './definition.ts'
@@ -120,7 +122,7 @@ interface Binding {
 
 /** Registry of YAML-declared presets and the revisions live Agents retain. */
 export class AgentPresetRegistry extends TypertRemoteService {
-  static inject = ['loader', 'sessionProjections']
+  static inject = ['loader', 'sessionProjections', 'agents']
   static Config = z.object({
     default: z.string().required(),
     selectedDefault: z.string().volatile(),
@@ -136,6 +138,8 @@ export class AgentPresetRegistry extends TypertRemoteService {
       maxEvidenceMessages: z.number(),
     }),
   })
+  private agentPresetProjectionHandle!: ProjectionHandle<string | null>
+  private expertRefinementProjectionHandle!: ProjectionHandle<ExpertRefinementProjection>
   private readonly owner: Context
   private readonly definitions = new Map<string, Definition>()
   private readonly generations = new Map<ScopeKey, Generation>()
@@ -185,7 +189,7 @@ export class AgentPresetRegistry extends TypertRemoteService {
    * ordinary definition — and a roster that answered before that scan finished
    * would omit every expert the deployment has.
    */
-  private readonly expertsReady: Promise<void>
+  private expertsReady!: Promise<void>
 
   constructor(ctx: Context, public config: Config) {
     super(ctx, 'agentPresets')
@@ -193,8 +197,14 @@ export class AgentPresetRegistry extends TypertRemoteService {
     this.selfCtx = ctx
     this.expertConfig = { ...DEFAULT_EXPERT_CONFIG, ...config.experts }
     this.expertRoots = config.roots ?? [{ path: dshHomePath(USER_PRESET_DIR), trust: 'user' }]
-    ctx.sessionProjections.register(agentPresetProjectionDefinition)
-    ctx.sessionProjections.register(expertRefinementProjectionDefinition(this.expertConfig.maxEvidenceMessages))
+  }
+
+  protected async [Service.init](): Promise<void> {
+    const ctx = this.owner
+    this.agentPresetProjectionHandle = await ctx.sessionProjections.register(agentPresetProjectionDefinition)
+    this.expertRefinementProjectionHandle = await ctx.sessionProjections.register(
+      expertRefinementProjectionDefinition(this.expertConfig.maxEvidenceMessages),
+    )
     ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
     ctx.on('session/event', (session, event) => {
       if (event.type === 'agent-preset/selected') ctx.emit('agent-preset/selected', session.id, event.data.agentPreset)
@@ -234,6 +244,15 @@ export class AgentPresetRegistry extends TypertRemoteService {
 
   /** Default preset for a subsequently created session. */
   get defaultId(): string { return this.config.selectedDefault.get() ?? this.config.default }
+
+  /**
+   * Read the preset recorded for a Session, including selections no longer in the roster.
+   * @param session - Session whose committed preset selection is read.
+   * @returns the recorded preset, or null when none was selected.
+   */
+  presetForSession(session: Session): string | null {
+    return this.agentPresetProjectionHandle.stateOf(session)
+  }
 
   /** Register and eagerly load a definition; activation failure remains visible in the roster.
    * @param definition Parsed configuration supplied by the declaring plugin.
@@ -516,13 +535,13 @@ export class AgentPresetRegistry extends TypertRemoteService {
   @Remote('select')
   async select(agent: Agent, agentPreset: string): Promise<string> {
     const turn = (this.switches.get(agent.id) ?? Promise.resolve()).then(async () => {
-      const boundary = this.owner.sessionProjections.stateOf(agent.session, 'turnBoundary')
-      if (boundary !== undefined && (boundary.openTurnStartSeq !== null || boundary.lastTurn > 0)) {
+      const boundary = this.owner.agents.turnBoundaryOf(agent.session)
+      if (boundary.openTurnStartSeq !== null || boundary.lastTurn > 0) {
         throw new RemoteError('agent-preset/locked', 'This session has already started', { sessionId: agent.id, agentPreset })
       }
       const current = this.definitions.get(agentPreset)?.generation
       if (current !== undefined && this.generationFor(agent.ctx) === current
-        && this.owner.sessionProjections.stateOf(agent.session, 'agentPreset') === agentPreset) return agentPreset
+        && this.agentPresetProjectionHandle.stateOf(agent.session) === agentPreset) return agentPreset
       const preset = await this.recompose(agent.ctx, agentPreset)
       agent.session.append('agent-preset/selected', { agentPreset: preset.id })
       return preset.id
@@ -794,10 +813,10 @@ export class AgentPresetRegistry extends TypertRemoteService {
       })
     }
     const resolvedExpert = await this.resolveExpert(presetId)
-    const refinement = this.selfCtx.sessionProjections.stateOf(agent.session, 'expertRefinement')
-    const answer = refinement?.recent.find(message => message.messageId === targetMessageId)
+    const refinement = this.expertRefinementProjectionHandle.stateOf(agent.session)
+    const answer = refinement.recent.find(message => message.messageId === targetMessageId)
     const loggedPrompt = answer?.prompt
-    if (loggedPrompt === undefined || refinement === undefined) {
+    if (loggedPrompt === undefined) {
       throw new RemoteError('expert/optimization-unavailable', 'the selected answer has no logged expert prompt', {
         sessionId,
         reason: 'the answer must come from this expert Session',
@@ -1014,8 +1033,8 @@ export class AgentPresetRegistry extends TypertRemoteService {
 
   /** Rebuild the last applied prompt override from durable Session events. */
   private restoreExpertPromptOverride(agent: Agent): void {
-    const prompt = this.selfCtx.sessionProjections.stateOf(agent.session, 'expertRefinement')?.appliedPrompt
-    if (prompt !== null && prompt !== undefined) this.installExpertPromptOverride(agent, prompt)
+    const prompt = this.expertRefinementProjectionHandle.stateOf(agent.session).appliedPrompt
+    if (prompt !== null) this.installExpertPromptOverride(agent, prompt)
   }
 
   /**
@@ -1030,8 +1049,8 @@ export class AgentPresetRegistry extends TypertRemoteService {
     const preset = this.expertPresets.get(presetId)
     if (preset === undefined) return false
     const expert = await readExpertDocument(preset)
-    const refinement = this.selfCtx.sessionProjections.stateOf(agent.session, 'expertRefinement')
-    const promptInForce = refinement?.appliedPrompt ?? refinement?.activePrompt
+    const refinement = this.expertRefinementProjectionHandle.stateOf(agent.session)
+    const promptInForce = refinement.appliedPrompt ?? refinement.activePrompt
     if (promptInForce === expert.prompt) return false
     this.applyExpertPrompt(agent, expert, 'branch-latest')
     return true

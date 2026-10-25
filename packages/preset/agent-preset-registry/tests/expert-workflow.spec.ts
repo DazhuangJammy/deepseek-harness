@@ -1,4 +1,5 @@
 /** Expert refinement coordinates a standard child and installs the reviewed result. */
+/* oxlint-disable typescript/no-deprecated -- assert the expert-refinement fold this workflow installs. */
 
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -19,6 +20,7 @@ import SkillRegistry from '@deepseek-ai/dsh-skill'
 import * as Persona from '@deepseek-ai/dsh-persona'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
+import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
@@ -90,6 +92,7 @@ async function workflowHarness(
   await ctx.plugin(SkillRegistry)
   await ctx.plugin(SystemPrompt, { personaPrefix: '' })
   await ctx.plugin(ToolRuntime)
+  await ctx.plugin(NativeToolExecutor)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(AgentLoop, { agents: [] })
   ctx.provide('subagents' as never, {
@@ -146,6 +149,7 @@ describe('expert optimization workflow', () => {
     await ctx.plugin(SkillRegistry)
     await ctx.plugin(SystemPrompt, { personaPrefix: '' })
     await ctx.plugin(ToolRuntime)
+    await ctx.plugin(NativeToolExecutor)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(AgentLoop, { agents: [] })
 

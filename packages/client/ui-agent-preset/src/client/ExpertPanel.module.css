@@ -58,11 +58,17 @@
   cursor: pointer;
 }
 
-.iconButton:hover,
-.iconChoice:hover:not(:disabled),
 .iconChoice[aria-pressed='true'] {
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-interactive-bg-hover);
+}
+
+@media (hover: hover) {
+  .iconButton:hover,
+  .iconChoice:hover:not(:disabled) {
+    color: var(--dsw-alias-label-primary);
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 .iconChoice:disabled {
@@ -170,9 +176,14 @@
   cursor: pointer;
 }
 
-.history li button:hover,
 .history li button:focus-visible {
   background: var(--dsw-alias-interactive-bg-hover);
+}
+
+@media (hover: hover) {
+  .history li button:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 .history li button > span,

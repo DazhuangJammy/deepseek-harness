@@ -14,7 +14,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import { BRAND_SETTINGS_NAMESPACE, DEFAULT_BRAND_SETTINGS, type BrandSettings } from '../brand-settings.ts'
 import { BrandSettingsCard, type BrandEditorState, OfficialBrandMark, OfficialBrandName, OfficialHeroBrandMark } from './Brand.tsx'
-import { en, zh, type BrandLocaleKey } from './locales.ts'
+import { de, en, es, fr, ja, pt, ru, zh, type BrandLocaleKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap { 'ui-brand-official': BrandLocaleKey }
@@ -148,7 +148,7 @@ export function apply(ctx: ClientContext): void {
   const controller = new BrandController(ctx)
   ctx.effect(() => {
     const locale = ctx.get('locale')
-    return locale === undefined ? () => {} : locale.register('ui-brand-official', { zh, en })
+    return locale === undefined ? () => {} : locale.register('ui-brand-official', { zh, en, ja, es, fr, de, ru, pt })
   }, 'ui-brand-official: dictionaries')
 
   /**

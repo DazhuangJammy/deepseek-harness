@@ -132,16 +132,28 @@
   cursor: pointer;
 }
 
-.row:hover .secondaryAction,
 .row:focus-within .secondaryAction {
   opacity: 1;
   pointer-events: auto;
 }
 
-.secondaryAction:hover,
+@media (hover: hover) {
+  .row:hover .secondaryAction {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .secondaryAction:focus-visible {
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-interactive-bg-hover);
+}
+
+@media (hover: hover) {
+  .secondaryAction:hover {
+    color: var(--dsw-alias-label-primary);
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 @media (hover: none) {

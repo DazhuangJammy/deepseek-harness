@@ -4,8 +4,9 @@
 #
 # A conversation-first preset: one complete conversational persona plus the
 # shell and filesystem tools uploaded files need. It deliberately omits skills,
-# project instructions, runtime context, and compaction. Conversation history
-# remains Session-owned and reaches every model request.
+# project instructions, and compaction; the base profile's required working
+# directory context still reaches the model. Conversation history remains
+# Session-owned and reaches every model request.
 - insert:
     - id: preset-chat
       name: '@deepseek-ai/dsh-agent-preset'

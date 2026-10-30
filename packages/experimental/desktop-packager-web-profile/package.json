@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-experimental-desktop-packager-web-profile",
   "description": "Experimental Web profile layer for the Desktop packager Host and UI plugins",
-  "version": "0.2.1-rc.3",
+  "version": "0.2.2-alpha.2",
   "publishConfig": {
     "access": "public"
   },

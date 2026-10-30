@@ -165,11 +165,17 @@
   cursor: pointer;
 }
 
-.eventNode:hover,
 .eventNode:focus-visible,
 .eventNodeExpanded {
   border-color: var(--dsw-alias-state-business-primary);
   outline: none;
+}
+
+@media (hover: hover) {
+  .eventNode:hover {
+    border-color: var(--dsw-alias-state-business-primary);
+    outline: none;
+  }
 }
 
 .eventNodeExpanded { box-shadow: inset 3px 0 0 var(--dsw-alias-state-business-primary); }
@@ -264,7 +270,11 @@
   cursor: pointer;
 }
 
-.termButton:hover, .termButton:focus-visible { border-color: var(--dsw-alias-state-business-primary); color: var(--dsw-alias-state-business-primary); outline: none; }
+.termButton:focus-visible { border-color: var(--dsw-alias-state-business-primary); color: var(--dsw-alias-state-business-primary); outline: none; }
+
+@media (hover: hover) {
+  .termButton:hover { border-color: var(--dsw-alias-state-business-primary); color: var(--dsw-alias-state-business-primary); outline: none; }
+}
 
 .empty { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 26px 18px; border: 1px dashed var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-base); }
 .emptyIcon { display: inline-flex; color: var(--dsw-alias-state-business-primary); }
@@ -273,7 +283,11 @@
 .glossaryBar { justify-content: space-between; gap: 12px; }
 .glossaryBar h2 { margin: 0 0 2px; }
 .dictionaryButton { flex: none; min-height: 30px; padding: 4px 10px; border: 0.5px solid var(--dsw-alias-border-l2); border-radius: 6px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-secondary); font-size: 12px; line-height: 20px; cursor: pointer; }
-.dictionaryButton:hover, .dictionaryButton:focus-visible { border-color: var(--dsw-alias-state-business-primary); color: var(--dsw-alias-state-business-primary); outline: none; }
+.dictionaryButton:focus-visible { border-color: var(--dsw-alias-state-business-primary); color: var(--dsw-alias-state-business-primary); outline: none; }
+
+@media (hover: hover) {
+  .dictionaryButton:hover { border-color: var(--dsw-alias-state-business-primary); color: var(--dsw-alias-state-business-primary); outline: none; }
+}
 .glossaryPreview { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 11px; }
 .dictionaryModal { width: min(760px, calc(100vw - 48px)); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); min-height: 0; padding-bottom: 16px; }
 .dictionaryModalContent, .glossaryModalContent {
@@ -285,7 +299,11 @@
 }
 .dictionaryGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-height: 0; max-height: min(640px, calc(100vh - 180px)); max-height: min(640px, calc(100dvh - 180px)); overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; align-content: start; }
 .dictionaryTerm { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding: 10px 11px; border: 0.5px solid var(--dsw-alias-border-l1); border-radius: 6px; background: var(--dsw-alias-bg-base); color: inherit; text-align: left; cursor: pointer; }
-.dictionaryTerm:hover, .dictionaryTerm:focus-visible { border-color: var(--dsw-alias-state-business-primary); outline: none; }
+.dictionaryTerm:focus-visible { border-color: var(--dsw-alias-state-business-primary); outline: none; }
+
+@media (hover: hover) {
+  .dictionaryTerm:hover { border-color: var(--dsw-alias-state-business-primary); outline: none; }
+}
 .dictionaryTerm strong { font-family: var(--dsw-font-markdown-code); font-size: 12px; line-height: 18px; font-weight: 600; }
 .dictionaryTerm span { display: block; color: var(--dsw-alias-label-secondary); font-size: 11px; line-height: 17px; overflow-wrap: anywhere; white-space: normal; }
 .glossaryModal { width: min(620px, calc(100vw - 48px)); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); min-height: 0; }

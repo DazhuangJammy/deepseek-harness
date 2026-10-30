@@ -14,7 +14,7 @@ import {
   stageText,
   type DesktopPackagerTabInjected,
 } from './DesktopPackagerTab.tsx'
-import { en, NS, zh, type DesktopPackagerLocaleKey } from './locales.ts'
+import { de, en, es, fr, ja, NS, pt, ru, zh, type DesktopPackagerLocaleKey } from './locales.ts'
 
 export type { DesktopPackagerTabInjected, DesktopPackagerTabProps } from './DesktopPackagerTab.tsx'
 export type { DesktopPackagerLocaleKey } from './locales.ts'
@@ -35,7 +35,7 @@ type RemoteCall<T> =
   | { readonly ok: false; readonly error: { readonly code: string; readonly message: string } }
 
 function registerUi(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'client-ui-desktop-packager: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'client-ui-desktop-packager: dictionaries')
   const t = ctx.locale.bind(NS)
 
   /** Unwrap one Remote call; a transport failure becomes a thrown error for the caller to show. */

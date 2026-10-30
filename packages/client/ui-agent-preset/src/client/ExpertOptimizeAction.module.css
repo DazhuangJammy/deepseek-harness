@@ -11,9 +11,11 @@
   cursor: pointer;
 }
 
-.action:not(:disabled):hover {
-  color: var(--dsw-alias-label-primary);
-  background: var(--dsw-alias-interactive-bg-hover);
+@media (hover: hover) {
+  .action:not(:disabled):hover {
+    color: var(--dsw-alias-label-primary);
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
 }
 
 .action:disabled {

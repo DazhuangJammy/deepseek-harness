@@ -7,7 +7,7 @@ import { apply, inject } from '../src/client/index.ts'
 import { BRAND_SETTINGS_NAMESPACE, DEFAULT_BRAND_SETTINGS } from '../src/brand-settings.ts'
 import type { BrandSettings } from '../src/brand-settings.ts'
 import type { BrandFace } from '../src/client/Brand.tsx'
-import { en, zh } from '../src/client/locales.ts'
+import { de, en, es, fr, ja, pt, ru, zh } from '../src/client/locales.ts'
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -341,7 +341,7 @@ describe('ui-brand-official browser half', () => {
     })
     await mount(subject)
 
-    expect(register).toHaveBeenCalledWith('ui-brand-official', { zh, en })
+    expect(register).toHaveBeenCalledWith('ui-brand-official', { zh, en, ja, es, fr, de, ru, pt })
     const card = subject.slots.entries('settings.plugins.tab')[0]
     expect(card?.options.id).toBe(BRAND_SETTINGS_NAMESPACE)
     expect(card?.locale).toBe('ui-brand-official')

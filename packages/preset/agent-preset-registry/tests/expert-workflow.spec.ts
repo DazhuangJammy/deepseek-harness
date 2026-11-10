@@ -597,7 +597,6 @@ describe('expert optimization workflow', () => {
       const parent = request['parent'] as Agent
       const handle = await started.registry!.agents.create({
         sessionId: SessionId(`refinement-child-${children.length}`),
-        parentAgent: parent,
         meta: { parentSession: parent.session.header.id, origin: 'subagent' },
         setup: async agentCtx => void await started.registry!.agentPresets.mount(agentCtx, 'interview'),
       })
@@ -626,7 +625,6 @@ describe('expert optimization workflow', () => {
     // A sibling subagent of the same expert starts outside a refinement window.
     const sibling = await ctx.agents.create({
       sessionId: SessionId('sibling-child'),
-      parentAgent: parent.agent,
       meta: { parentSession: parent.agent.session.header.id, origin: 'subagent' },
       setup: async agentCtx => void await ctx.agentPresets.mount(agentCtx, 'interview'),
     })

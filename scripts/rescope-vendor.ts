@@ -106,6 +106,13 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'packages/experimental/creation-recommendations/tests/creation.spec.ts', upstream: ['cordis'] },
   { file: 'packages/experimental/creation-recommendations/tests/loader-composition.spec.ts', upstream: ['cordis'] },
   // Preset selection, reminder policy and UI copy use the same product id.
+  // The tool catalog and the fs-observation-policy upgrade guide name the Web
+  // `cordis` preset row, which is product data rather than a package reference.
+  { file: 'docs/tool-catalog.md', upstream: ['cordis'] },
+  { file: 'docs/tool-catalog.zh.md', upstream: ['cordis'] },
+  { file: 'scripts/gen-tool-catalog.ts', upstream: ['cordis'] },
+  { file: 'docs/upgrade-guide/v0.2.2-alpha.2/fs-observation-policy-default-off/guide.md', upstream: ['cordis'] },
+  { file: 'docs/upgrade-guide/v0.2.2-alpha.2/fs-observation-policy-default-off/guide.zh.md', upstream: ['cordis'] },
   { file: 'apps/cli/tests/optional-bundle-transitions.e2e.ts', upstream: ['cordis'] },
   { file: 'apps/web/tests/agent-preset-selection.e2e.ts', upstream: ['cordis'] },
   { file: 'apps/web/tests/developer-tools-settings.e2e.ts', upstream: ['cordis'] },

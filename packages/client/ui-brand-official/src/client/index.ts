@@ -1,4 +1,4 @@
-/** Official DeepSeek Harness occupants for the generic browser-brand slots. */
+/** Official DeepSeek Harness occupants: the configurable brand slots and the home whale frame layer. */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 // Type-only: the ctx.configForms Context merge and the shared form contract.
@@ -14,6 +14,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import { BRAND_SETTINGS_NAMESPACE, DEFAULT_BRAND_SETTINGS, type BrandSettings } from '../brand-settings.ts'
 import { BrandSettingsCard, type BrandEditorState, OfficialBrandMark, OfficialBrandName, OfficialHeroBrandMark } from './Brand.tsx'
+import { PixelWhale } from './home-whale/PixelWhale.tsx'
 import { de, en, es, fr, ja, pt, ru, zh, type BrandLocaleKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -140,6 +141,10 @@ export const inject = ['slots']
  * @param ctx - Client root context.
  */
 export function apply(ctx: ClientContext): void {
+  ctx.slots.inject('conversation.hero.frame', () => ctx.slots.register({
+    name: 'conversation.hero.frame',
+    id: 'pixel-whale',
+  }, PixelWhale))
   // Lightweight hosts without the configuration forms retain the historical
   // profile gate; the assembled Web client always has the service and can
   // configure the brand.

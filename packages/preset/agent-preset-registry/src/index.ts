@@ -43,15 +43,7 @@ export { entryListProblem, type PresetDefinition } from './definition.ts'
 export { auditRows, leakedServices, type PresetMount, type RowAudit } from './mount.ts'
 export type { AgentPresetInspection } from './composition-inventory.ts'
 export type { AgentPreset, Config, ExpertConfig, ExpertPreset, PresetRoot, PresetTrust } from './preset.ts'
-export { DEFAULT_EXPERT_CONFIG, PRESET_ID } from './preset.ts'
-export {
-  COMPOSITION_FILE, USER_PRESET_DIR, discoverExpertPresets, expertDefinition, scanRoot,
-} from './expert-install.ts'
-export {
-  METADATA_FILE, readPresetMetadata, renderPresetMetadata, type PresetMetadata,
-} from './metadata.ts'
-export { readExpertSummary, readExpertDocument, readExpertVersionComparison, expertComposition } from './expert.ts'
-export { writableRoot } from './authoring.ts'
+export type { PresetMetadata } from './metadata.ts'
 export type * from './types.ts'
 
 /** Refuse an empty preset id before invoking a domain operation. */

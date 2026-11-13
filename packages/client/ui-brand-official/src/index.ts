@@ -9,9 +9,7 @@ import type { Context, Volatile } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-settings'
 import { BrandSettingsSchema } from './brand-settings.ts'
 
-export {
-  BRAND_SETTINGS_NAMESPACE, DEFAULT_BRAND_SETTINGS, BrandSettingsSchema, type BrandSettings,
-} from './brand-settings.ts'
+export type { BrandSettings } from './brand-settings.ts'
 
 /** Runtime custom-brand values projected to the browser. */
 export interface Config {

@@ -35,7 +35,7 @@ declare module '@deepseek-ai/dsh-llm' {
 }
 
 function fakeParent(id = 'parent-1'): Agent {
-  return { id: SessionId(id) } as unknown as Agent
+  return { id: SessionId(id) } as Agent
 }
 
 const ALL_CAPS: SubagentCapabilities = {

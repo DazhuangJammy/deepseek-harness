@@ -1,6 +1,7 @@
 /** Browser state for the expert roster, editor, and per-Session refinement review. */
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { MessageId } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-api-session-controller/client'
 import type {
@@ -9,7 +10,6 @@ import type {
 } from '@deepseek-ai/dsh-agent-preset-registry/types'
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { SessionReference } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
 /** Editable expert fields shared by create and update. */

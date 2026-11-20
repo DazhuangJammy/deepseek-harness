@@ -62,7 +62,7 @@ kind: "package-reference"
 
 - [宿主打包运行器](../desktop-packager/README.zh.md) —— 这里每个操作背后的服务。
 - [opt-in Web 层](../desktop-packager-web-profile/README.zh.md) —— 挂载这两半的补丁。
-- [插件设置分节](../../client/ui-settings-plugins/README.zh.md) —— 拥有 tab 外壳的分节。
+- [插件设置分节](../../client/ui-settings/README.zh.md) —— 拥有设置页条目的分节类型。
 - [实验性包](../README.zh.md) —— 孵化状态与发布策略。
 
 -----

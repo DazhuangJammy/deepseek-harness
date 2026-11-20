@@ -16,7 +16,7 @@ The Host service runs the checkout's own `package:desktop:<target>:unsigned` scr
 
 The Host also reveals a produced installer, or the target's artifact directory before one exists, through the platform's own file manager (`open -R`, `explorer /select,`) instead of returning a path to copy, because the Desktop composition disables the repository's open-in-app capability and its routes, and the reveal belongs to the operation that produced the file.
 
-The browser half imports the generated `/remote` contribution and mounts it with `ctx.remote.$mount()`, so no shipped assembly names the plugin. It registers one `settings.plugins.tab` contribution and one client-owned `commandUi` contribution named `desktop`. Both drive the same inject face. Starting a build is gated on an acknowledgement the user must check: the tab renders the shared `RiskConfirmation`, and the command's start option carries the equivalent declarative `SelectConfirmation`.
+The browser half imports the generated `/remote` contribution and mounts it with `ctx.remote.$mount()`, so no shipped assembly names the plugin. It registers one `settings.section` contribution and one client-owned `commandUi` contribution named `desktop`. Both drive the same inject face. Starting a build is gated on an acknowledgement the user must check: the page renders the shared `RiskConfirmation`, and the command's start option carries the equivalent declarative `SelectConfirmation`.
 
 ## Consequences
 

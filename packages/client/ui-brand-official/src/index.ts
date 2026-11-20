@@ -21,12 +21,12 @@ export interface Config {
   icon: Volatile<string>
 }
 
-/** Live custom-brand fields, editable through the Settings → Plugins tab. */
+/** Live custom-brand fields, editable through the brand page this plugin registers in Settings. */
 export const Config = BrandSettingsSchema
 
 /**
  * Claim the brand page policy when the settings service is composed. The plugin
- * ships its own card in `settings.plugins.tab`, so the auto-generated page for
+ * ships its own page in `settings.section`, so the auto-generated page for
  * this entry is suppressed; without a settings service the plugin stays inert
  * and the browser half keeps its build-profile default.
  * @param ctx - Host plugin context.

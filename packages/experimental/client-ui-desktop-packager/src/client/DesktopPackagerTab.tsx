@@ -24,7 +24,7 @@ export interface DesktopPackagerTabInjected {
 
 /** Full component props assembled by the Settings slot renderer. */
 export type DesktopPackagerTabProps =
-  PropsRuntime<'settings.plugins.tab'>
+  PropsRuntime<'settings.section'>
   & PropsLocale<'settings.desktopPackager'>
   & InjectFace<DesktopPackagerTabInjected>
 

@@ -12,7 +12,7 @@ import AgentRegistry, { assembleContextFor, type Agent, type AgentHandle } from 
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import {
   createAssistantMessage, createSystemMessage, createUserMessage, LlmRuntime,
-  type ContentBlock,
+  type ContentBlock, MessageId,
 } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
@@ -22,7 +22,6 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import { brandString } from '@deepseek-ai/dsh-brand'
-import { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AgentPresets from '../src/index.ts'

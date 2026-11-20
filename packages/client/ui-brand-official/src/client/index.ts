@@ -10,7 +10,6 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import { BRAND_SETTINGS_NAMESPACE, DEFAULT_BRAND_SETTINGS, type BrandSettings } from '../brand-settings.ts'
 import { BrandSettingsCard, type BrandEditorState, OfficialBrandMark, OfficialBrandName, OfficialHeroBrandMark } from './Brand.tsx'
@@ -192,8 +191,8 @@ export function apply(ctx: ClientContext): void {
     brand => brand.enabled && brand.icon.trim() !== '',
     () => ctx.slots.register({ name: 'conversation.hero.brand.mark', inject: () => controller.face() }, OfficialHeroBrandMark),
   ))
-  ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
-    name: 'settings.plugins.tab', id: BRAND_SETTINGS_NAMESPACE, order: 20,
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section', id: BRAND_SETTINGS_NAMESPACE, order: 20,
     // The dictionary is optional — a host without `locale` registers none — so
     // the label reads it through `ctx.get` and falls back to the shipped English
     // copy instead of reaching for an uninjected service.

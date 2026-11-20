@@ -5,9 +5,9 @@ import type {
   ExpertDocument, ExpertOptimizationOutcome, ExpertProposalId,
 } from '@deepseek-ai/dsh-agent-preset-registry/types'
 import { brandString } from '@deepseek-ai/dsh-brand'
+import { MessageId } from '@deepseek-ai/dsh-llm'
 import type { CommandContribution } from '@deepseek-ai/dsh-client-ui-commands/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
-import { MessageId } from '@deepseek-ai/dsh-llm/brand'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { describe, expect, it, vi } from 'vitest'
 import type { ExpertPanelInjected } from '../src/client/ExpertPanel.tsx'

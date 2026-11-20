@@ -1,7 +1,6 @@
 /** Bounded Session projection used by expert refinement and resume restoration. */
 
-import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
-import type { Message } from '@deepseek-ai/dsh-llm'
+import type { Message, MessageId } from '@deepseek-ai/dsh-llm'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import { SessionSeq } from '@deepseek-ai/dsh-session/types'

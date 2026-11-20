@@ -16,7 +16,7 @@ Status: implemented
 
 宿主还通过平台自带的文件管理器（`open -R`、`explorer /select,`）显示已产出的安装包（尚未产出时显示该目标的产物目录），而不是只返回一个可复制的路径：桌面版组合禁用了仓库的 open-in-app 能力及其路由，而"显示产物"本就属于产出该文件的那次操作。
 
-浏览器侧导入生成的 `/remote` 贡献并用 `ctx.remote.$mount()` 挂载它，因此没有任何随附装配指名该插件。它注册一个 `settings.plugins.tab` 贡献和一个客户端拥有的、名为 `desktop` 的 `commandUi` 贡献。两者驱动同一个注入面。开始构建以用户必须勾选的确认为门控：tab 渲染共享的 `RiskConfirmation`，命令的开始选项携带等价的声明式 `SelectConfirmation`。
+浏览器侧导入生成的 `/remote` 贡献并用 `ctx.remote.$mount()` 挂载它，因此没有任何随附装配指名该插件。它注册一个 `settings.section` 贡献和一个客户端拥有的、名为 `desktop` 的 `commandUi` 贡献。两者驱动同一个注入面。开始构建以用户必须勾选的确认为门控：页面渲染共享的 `RiskConfirmation`，命令的开始选项携带等价的声明式 `SelectConfirmation`。
 
 ## 后果
 

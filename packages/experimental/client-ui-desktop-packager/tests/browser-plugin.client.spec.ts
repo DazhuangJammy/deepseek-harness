@@ -74,7 +74,7 @@ async function bench(options: { registrationFailure?: boolean; running?: boolean
   await ctx.plugin(SlotRegistry).await()
   const collapseTabs = ctx.slots.register({
     name: 'root',
-    children: { 'settings.plugins.tab': { kind: 'list', scope: 'root' } },
+    children: { 'settings.section': { kind: 'list', scope: 'root' } },
   } as never, () => null)
   if (options.registrationFailure === true) {
     vi.spyOn(ctx.slots, 'inject').mockImplementationOnce(() => { throw new Error('slot registration failed') })
@@ -87,7 +87,7 @@ async function bench(options: { registrationFailure?: boolean; running?: boolean
     : fiber.await()
   if (options.registrationFailure !== true) await activation
   else await fiber.await()
-  const entry = () => ctx.slots.entries('settings.plugins.tab')
+  const entry = () => ctx.slots.entries('settings.section')
     .find(candidate => candidate.component === DesktopPackagerTab)
   return { ctx, fiber, activation, calls, remote, entries: entry, contributions, commandDispose, collapseTabs }
 }
@@ -164,7 +164,7 @@ describe('desktop packager browser plugin', () => {
     expect(b.entries()).toBeUndefined()
     b.ctx.slots.register({
       name: 'root',
-      children: { 'settings.plugins.tab': { kind: 'list', scope: 'root' } },
+      children: { 'settings.section': { kind: 'list', scope: 'root' } },
     } as never, () => null)
     await Promise.resolve()
     expect(b.entries()).toBeDefined()

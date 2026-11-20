@@ -52,8 +52,8 @@ function registerUi(ctx: ClientContext): void {
     reveal: async () => await call(() => ctx.remote.desktopPackager.reveal()),
   }
 
-  ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
-    name: 'settings.plugins.tab',
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
     id: 'desktop',
     order: 5,
     label: () => t('tab'),

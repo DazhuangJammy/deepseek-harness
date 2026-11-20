@@ -23,8 +23,8 @@ const HOLES = [
 
 const HERO_HOLES = ['conversation.hero.brand.mark'] as const
 
-/** The Plugins-settings list this plugin contributes its settings card to. */
-const TAB_HOLE = 'settings.plugins.tab'
+/** The Settings list this plugin contributes its brand page to. */
+const TAB_HOLE = 'settings.section'
 
 async function bench(declare = true) {
   const ctx = new Context()

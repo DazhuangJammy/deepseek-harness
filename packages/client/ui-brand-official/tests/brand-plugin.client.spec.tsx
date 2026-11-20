@@ -22,7 +22,7 @@ const CHILDREN = {
   'sidebar.brand.mark': { kind: 'single', scope: 'root' },
   'sidebar.brand.name': { kind: 'single', scope: 'root' },
   'conversation.hero.brand.mark': { kind: 'single', scope: 'root' },
-  'settings.plugins.tab': { kind: 'list', scope: 'root' },
+  'settings.section': { kind: 'list', scope: 'root' },
 } as const
 
 interface BenchOptions {
@@ -71,7 +71,7 @@ function faceOf(slots: SlotRegistry, hole: string): BrandFace {
 
 /** The controller face, reached through the settings card every host registers. */
 function controllerFace(subject: Bench): BrandFace {
-  return faceOf(subject.slots, 'settings.plugins.tab')
+  return faceOf(subject.slots, 'settings.section')
 }
 
 /** Provide the configuration-forms provider and record the entry each lookup asked for. */
@@ -342,7 +342,7 @@ describe('ui-brand-official browser half', () => {
     await mount(subject)
 
     expect(register).toHaveBeenCalledWith('ui-brand-official', { zh, en, ja, es, fr, de, ru, pt })
-    const card = subject.slots.entries('settings.plugins.tab')[0]
+    const card = subject.slots.entries('settings.section')[0]
     expect(card?.options.id).toBe(BRAND_SETTINGS_NAMESPACE)
     expect(card?.locale).toBe('ui-brand-official')
     expect((card?.inject as unknown as () => BrandFace)()).toHaveProperty('hooks')
@@ -355,7 +355,7 @@ describe('ui-brand-official browser half', () => {
     slots.register({ name: 'root', children: CHILDREN } as never, () => null)
     vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 'local')
     await ctx.plugin({ inject: [...inject], apply }).await()
-    for (const hole of ['sidebar.brand.mark', 'sidebar.brand.name', 'conversation.hero.brand.mark', 'settings.plugins.tab']) {
+    for (const hole of ['sidebar.brand.mark', 'sidebar.brand.name', 'conversation.hero.brand.mark', 'settings.section']) {
       expect(slots.entries(hole as never)).toHaveLength(0)
     }
   })

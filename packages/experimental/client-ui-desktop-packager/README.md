@@ -62,7 +62,7 @@ The browser entry imports the Host package's generated `./remote` contribution a
 
 - [Host packaging runner](../desktop-packager/README.md) — the service behind every action here.
 - [Opt-in Web layer](../desktop-packager-web-profile/README.md) — the patch that mounts both halves.
-- [Plugins settings section](../../client/ui-settings-plugins/README.md) — the section that owns the tab chrome.
+- [Plugins settings section](../../client/ui-settings/README.md) — the section type that owns a settings page entry.
 - [Experimental packages](../README.md) — incubation status and publication policy.
 
 -----

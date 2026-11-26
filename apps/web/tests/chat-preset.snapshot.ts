@@ -61,7 +61,7 @@ describe('chat agent preset', () => {
         && event.data.source.kind === 'runtime-context').length,
     }).toEqual({
       prompt: CHAT_PROMPT,
-      tools: ['bash', 'edit', 'glob', 'grep', 'read', 'read_image', 'working_directory', 'write'],
+      tools: ['bash', 'edit', 'glob', 'grep', 'read', 'read_image', 'write'],
       compaction: undefined,
       runtimeContextMessages: 1,
     })

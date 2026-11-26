@@ -193,7 +193,7 @@ function recordFromNode(node: ConversationNode, t: (key: LearningKey) => string)
       return { id: `context-${node.seq}`, kind: 'context', stage: 'capabilities', tone: 'system', badge: 'kind.system', title: t('event.context'), summary: node.producer.label ?? output, observed: { input: node.producer.label ?? t('graph.notAvailable'), output }, seq: node.seq, component: observedComponent('component.context', node.producer.label ?? t('graph.notAvailable'), 'graph.evidence.contextProducer'), detail: recordDetail('context') }
     }
     case 'compaction': {
-      const output = node.summary === null ? t('record.compactionHidden') : t('record.compactionCount').replace('{count}', String(node.shadowedItemCount ?? 0))
+      const output = node.summaryEventSeq === null ? t('record.compactionHidden') : t('record.compactionCount').replace('{count}', String(node.shadowedItemCount ?? 0))
       return { id: `compaction-${node.seq}`, kind: 'compaction', stage: 'evidence', tone: 'system', badge: 'kind.system', title: t('event.compaction'), summary: output, observed: { input: t('detail.compaction.input'), output }, seq: node.seq, component: observedComponent('component.compaction', t('component.compaction'), 'graph.evidence.sessionNode'), detail: recordDetail('compaction') }
     }
     case 'model-retry': {

@@ -85,6 +85,10 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   // Native schema detection and its fixture share the vendored runtime's Symbol.for identifier.
   { file: 'packages/boot/app-boot/src/config-schema/native.ts', upstream: ['schemastery'] },
   { file: 'packages/boot/app-boot/tests/config-schema.spec.ts', upstream: ['schemastery'] },
+  // These fixtures link the vendored package into `node_modules/@deepseek-ai`, so the
+  // quoted directory segment is already the scoped name and the token rule would duplicate it.
+  { file: 'apps/web/tests/client-config-sync.e2e.ts', upstream: ['schemastery'] },
+  { file: 'apps/web/tests/input-plugin-extensions.e2e.ts', upstream: ['schemastery'] },
   // The codemod's positive and negative fixtures contain both package spellings.
   { file: 'scripts/rescope-vendor.spec.ts', upstream: RENAMES.map(rename => rename.upstream), fixture: true },
   // Asserts the vendored-manifest table, which gains an upstream-name column.
@@ -104,9 +108,9 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'apps/web/tests/creator-persona.e2e.ts', upstream: ['cordis'] },
   { file: 'packages/preset/agent-preset-registry/tests/session.spec.ts', upstream: ['cordis'] },
   { file: 'packages/experimental/cua/tests/agent-scopes.spec.ts', upstream: ['cordis'] },
-  { file: 'packages/experimental/creation-recommendations/src/index.ts', upstream: ['cordis'] },
-  { file: 'packages/experimental/creation-recommendations/tests/creation.spec.ts', upstream: ['cordis'] },
-  { file: 'packages/experimental/creation-recommendations/tests/loader-composition.spec.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/creation-recommendations/src/index.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/creation-recommendations/tests/creation.spec.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/creation-recommendations/tests/loader-composition.spec.ts', upstream: ['cordis'] },
   // Preset selection, reminder policy and UI copy use the same product id.
   // The tool catalog and the fs-observation-policy upgrade guide name the Web
   // `cordis` preset row, which is product data rather than a package reference.
